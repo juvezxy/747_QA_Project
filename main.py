@@ -314,8 +314,8 @@ if use_cuda:
     decoder = decoder.cuda()
 
 # use a smaller subset for now
-trainingPairs = trainingPairs[:20000] + trainingPairs[-20000:]
-testPairs = testPairs[:2000] + testPairs[-2000:]
+#trainingPairs = trainingPairs[:20000] + trainingPairs[-20000:]
+#testPairs = testPairs[:2000] + testPairs[-2000:]
 trainIters(trainingPairs, encoder, decoder)
 evaluate(testPairs, encoder, decoder, wordIndexer)
 
