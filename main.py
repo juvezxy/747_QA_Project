@@ -20,6 +20,9 @@ use_cuda = torch.cuda.is_available()
 
 
 entPattern = re.compile('<.*>')
+yearPattern = re.compile('\d+年')
+monthPattern = re.compile('\d+月')
+dayPattern = re.compile('\d+[日|号]')
 
 SOS = 0
 EOS = 1
@@ -89,7 +92,7 @@ def processData(qaPairs):
         answerIndexlist = wordIndexer.addSentence(answer)
         pairCount += 1
         if (pairCount % 10 == 0):
-            testPairs.append((questionIndexlist, answerIndexlist))
+            testPairs.append((questionIndexlist, answer))
         else:
             trainingPairs.append((questionIndexlist, answerIndexlist))
     '''print (questionIndexer.word2index)
@@ -222,19 +225,27 @@ def trainIters(pairs, encoder, decoder, learningRate=0.01):
             secs -= mins * 60
             print ('%dm %ds' % (mins, secs), 'after iteration:', iter, 'with avg loss:', lossAvg)
 
-def evaluate(testPairs, encoder, decoder):
+def evaluate(testPairs, encoder, decoder, wordIndexer):
     print ('Evaluating ...')
     precisionTotal = 0
     recallTotal = 0
     F1Total = 0
     testLength = len(testPairs)
+    genderCorrect = 0
+    genderPredicted = 0
+    yearCorrect = 0
+    monthCorrect = 0
+    dayCorrect = 0
+    yearAppear = 0
+    monthAppear = 0
+    dayAppear = 0
     for i in range(testLength):
-        inputSeq, targetSeq = testPairs[i]
+        inputSeq, target = testPairs[i]
         inputVar = Variable(torch.LongTensor(inputSeq).view(-1, 1))
         if use_cuda:
             inputVar = inputVar.cuda()
         predictedSeq = predict(inputVar, encoder, decoder)
-        precision = precision_score(targetSeq, predictedSeq, average='micro')
+        '''precision = precision_score(targetSeq, predictedSeq, average='micro')
         recall = recall_score(targetSeq, predictedSeq, average='micro')
         F1 = 2 * (precision * recall) / (precision + recall)
         precisionTotal += precision
@@ -243,9 +254,44 @@ def evaluate(testPairs, encoder, decoder):
         if (i+1) % 1000 == 0:
             print ('Test size so far:', i, 'precision:', precisionTotal / (i+1), 'recall:', recallTotal / (i+1),
                 'F1:', F1Total / (i+1))
-    print ('Average precision:', precisionTotal / testLength, 'recall:', recallTotal / testLength,
-        'F1:', F1Total / testLength)
+        '''
+        #predicted = [wordIndexer.index2word[index] for index in predictedSeq]
+        #print (predicted)
+        #print (target)
+        entIndex = inputSeq[0] # index of the entity
+        entity = wordIndexer.index2word[entIndex]
+        entityNumber = int(re.findall('\d+', entity)[0])
+        predictedEntity = entIndex in predictedSeq
+        predictedMale = wordIndexer.word2index['他'] in predictedSeq
+        predictedFemale = wordIndexer.word2index['她'] in predictedSeq
+        if predictedEntity or predictedMale or predictedFemale:
+            genderPredicted += 1
+        if predictedEntity or (predictedMale and entityNumber <= 40000) or (predictedFemale and entityNumber > 40000):
+            genderCorrect += 1
 
+        yearMatch = yearPattern.search(target)
+        monthMatch = monthPattern.search(target)
+        dayMatch = dayPattern.search(target)
+
+        if (yearMatch):
+            yearAppear += 1
+            year = yearMatch.group()[:-1]
+            if wordIndexer.word2index[year] in predictedSeq:
+                yearCorrect += 1
+        if (monthMatch):
+            monthAppear += 1
+            month = monthMatch.group()[:-1]
+            if wordIndexer.word2index[month] in predictedSeq:
+                monthCorrect += 1
+        if (dayMatch):
+            dayAppear += 1
+            day = dayMatch.group()[:-1]
+            if wordIndexer.word2index[day] in predictedSeq:
+                dayCorrect += 1
+
+    #print ('Average precision:', precisionTotal / testLength, 'recall:', recallTotal / testLength, 'F1:', F1Total / testLength)
+    print ('Precision of gender:', genderCorrect * 1.0 / genderPredicted)
+    print ('Recall:', (genderCorrect+yearCorrect+monthCorrect+dayCorrect) * 1.0 / (testLength+yearAppear+monthAppear+dayAppear)) 
 
 qaPairs = loadData(config.synDataPath)
 wordIndexer, trainingPairs, testPairs = processData(qaPairs)
@@ -255,6 +301,9 @@ if use_cuda:
     encoder = encoder.cuda()
     decoder = decoder.cuda()
 
-trainIters(trainingPairs[0:20000], encoder, decoder)
-evaluate(testPairs, encoder, decoder)
+# use a smaller subset for now
+trainingPairs = trainingPairs[:10000] + trainingPairs[-10000:]
+testPairs = testPairs[:1000] + testPairs[-1000:]
+trainIters(trainingPairs, encoder, decoder)
+evaluate(testPairs, encoder, decoder, wordIndexer)
 
