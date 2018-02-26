@@ -214,8 +214,8 @@ def trainIters(pairs, encoder, decoder, learningRate=0.01):
         inputVar, targetVar = varsFromPair(pairs[iter])
         loss = train(inputVar, targetVar, encoder, decoder, encoderOptimizer, decoderOptimizer, criterion)
         lossTotal += loss
-        if (iter+1) % 100 == 0:
-            lossAvg = lossTotal / 100
+        if (iter+1) % 1000 == 0:
+            lossAvg = lossTotal / 1000
             lossTotal = 0
             secs = time.time() - startTime
             mins = math.floor(secs / 60)
@@ -255,6 +255,6 @@ if use_cuda:
     encoder = encoder.cuda()
     decoder = decoder.cuda()
 
-trainIters(trainingPairs[:1000], encoder, decoder)
+trainIters(trainingPairs[0:20000], encoder, decoder)
 evaluate(testPairs, encoder, decoder)
 
