@@ -223,7 +223,7 @@ def trainIters(pairs, encoder, decoder, learningRate=0.01):
             secs = time.time() - startTime
             mins = math.floor(secs / 60)
             secs -= mins * 60
-            print ('%dm %ds' % (mins, secs), 'after iteration:', iter, 'with avg loss:', lossAvg)
+            print ('%dm %ds' % (mins, secs), 'after iteration:', iter+1, 'with avg loss:', lossAvg)
 
 def evaluate(testPairs, encoder, decoder, wordIndexer):
     print ('Evaluating ...')
@@ -255,9 +255,11 @@ def evaluate(testPairs, encoder, decoder, wordIndexer):
             print ('Test size so far:', i, 'precision:', precisionTotal / (i+1), 'recall:', recallTotal / (i+1),
                 'F1:', F1Total / (i+1))
         '''
-        #predicted = [wordIndexer.index2word[index] for index in predictedSeq]
-        #print (predicted)
-        #print (target)
+        if (i+1) % 1000 == 0:
+            predicted = [wordIndexer.index2word[index] for index in predictedSeq]
+            print (predicted)
+            print (target)
+        
         entIndex = inputSeq[0] # index of the entity
         entity = wordIndexer.index2word[entIndex]
         entityNumber = int(re.findall('\d+', entity)[0])
@@ -302,8 +304,8 @@ if use_cuda:
     decoder = decoder.cuda()
 
 # use a smaller subset for now
-trainingPairs = trainingPairs[:10000] + trainingPairs[-10000:]
-testPairs = testPairs[:1000] + testPairs[-1000:]
+#trainingPairs = trainingPairs[:10000] + trainingPairs[-10000:]
+#testPairs = testPairs[:1000] + testPairs[-1000:]
 trainIters(trainingPairs, encoder, decoder)
 evaluate(testPairs, encoder, decoder, wordIndexer)
 
