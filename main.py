@@ -305,7 +305,7 @@ def evaluate(testPairs, encoder, decoder, wordIndexer):
     print ('Precision:', (genderCorrect+yearCorrect+monthCorrect+dayCorrect) * 1.0 / (genderPredicted+yearPredicted+monthPredicted+dayPredicted))
     print ('Recall:', (genderCorrect+yearCorrect+monthCorrect+dayCorrect) * 1.0 / (testLength+yearAppear+monthAppear+dayAppear)) 
 
-qaPairs = loadData(config.toyDataPath)
+qaPairs = loadData(config.synDataPath)
 wordIndexer, trainingPairs, testPairs = processData(qaPairs)
 encoder = Encoder(wordIndexer.wordCount, config.hiddenSize)
 decoder = Decoder(config.hiddenSize, wordIndexer.wordCount)
