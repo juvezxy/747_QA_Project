@@ -236,6 +236,9 @@ def evaluate(testPairs, encoder, decoder, wordIndexer):
     yearCorrect = 0
     monthCorrect = 0
     dayCorrect = 0
+    yearPredicted = 0
+    monthPredicted = 0
+    dayPredicted = 0
     yearAppear = 0
     monthAppear = 0
     dayAppear = 0
@@ -274,6 +277,9 @@ def evaluate(testPairs, encoder, decoder, wordIndexer):
         yearMatch = yearPattern.search(target)
         monthMatch = monthPattern.search(target)
         dayMatch = dayPattern.search(target)
+        yearPredicted += wordIndexer.word2index['年'] in predictedSeq
+        monthPredicted += wordIndexer.word2index['月'] in predictedSeq
+        dayPredicted += wordIndexer.word2index['日'] in predictedSeq or wordIndexer.word2index['号'] in predictedSeq
 
         if (yearMatch):
             yearAppear += 1
@@ -293,9 +299,13 @@ def evaluate(testPairs, encoder, decoder, wordIndexer):
 
     #print ('Average precision:', precisionTotal / testLength, 'recall:', recallTotal / testLength, 'F1:', F1Total / testLength)
     print ('Precision of gender:', genderCorrect * 1.0 / genderPredicted)
+    print ('Precision of year:', yearCorrect * 1.0 / yearPredicted)
+    print ('Precision of month:', monthCorrect * 1.0 / monthPredicted)
+    print ('Precision of day:', dayCorrect * 1.0 / dayPredicted)
+    print ('Precision:', (genderCorrect+yearCorrect+monthCorrect+dayCorrect) * 1.0 / (genderPredicted+yearPredicted+monthPredicted+dayPredicted))
     print ('Recall:', (genderCorrect+yearCorrect+monthCorrect+dayCorrect) * 1.0 / (testLength+yearAppear+monthAppear+dayAppear)) 
 
-qaPairs = loadData(config.synDataPath)
+qaPairs = loadData(config.toyDataPath)
 wordIndexer, trainingPairs, testPairs = processData(qaPairs)
 encoder = Encoder(wordIndexer.wordCount, config.hiddenSize)
 decoder = Decoder(config.hiddenSize, wordIndexer.wordCount)
@@ -304,8 +314,8 @@ if use_cuda:
     decoder = decoder.cuda()
 
 # use a smaller subset for now
-#trainingPairs = trainingPairs[:10000] + trainingPairs[-10000:]
-#testPairs = testPairs[:1000] + testPairs[-1000:]
+trainingPairs = trainingPairs[:20000] + trainingPairs[-20000:]
+testPairs = testPairs[:2000] + testPairs[-2000:]
 trainIters(trainingPairs, encoder, decoder)
 evaluate(testPairs, encoder, decoder, wordIndexer)
 
