@@ -1,7 +1,5 @@
 from __future__ import unicode_literals, print_function, division
 from io import open
-import unicodedata
-import string
 import math
 import time
 import re
@@ -14,7 +12,6 @@ import torch.nn as nn
 from torch.autograd import Variable
 from torch import optim
 import torch.nn.functional as F
-from sklearn.metrics import recall_score, precision_score
 
 use_cuda = torch.cuda.is_available()
 
@@ -260,8 +257,10 @@ def evaluate(testPairs, encoder, decoder, wordIndexer):
         '''
         if (i+1) % 1000 == 0:
             predicted = [wordIndexer.index2word[index] for index in predictedSeq]
-            print (predicted)
-            print (target)
+            question = [wordIndexer.index2word[index] for index in inputSeq]
+            print ('Question:', question)
+            print ('Gold Answer:', target)
+            print ('Generated Answer:', predicted)
         
         entIndex = inputSeq[0] # index of the entity
         entity = wordIndexer.index2word[entIndex]
@@ -318,4 +317,3 @@ if use_cuda:
 #testPairs = testPairs[:2000] + testPairs[-2000:]
 trainIters(trainingPairs, encoder, decoder)
 evaluate(testPairs, encoder, decoder, wordIndexer)
-
