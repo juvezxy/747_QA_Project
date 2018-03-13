@@ -5,6 +5,10 @@ from io import open
 import re
 import jieba
 
+import torch
+import torch.nn as nn
+from torch.autograd import Variable
+
 entPattern = re.compile('<.*>')
 yearPattern = re.compile('\d+年')
 monthPattern = re.compile('\d+月')
@@ -12,6 +16,8 @@ dayPattern = re.compile('\d+[日|号]')
 
 SOS = 0
 EOS = 1
+
+use_cuda = torch.cuda.is_available()
 
 class WordIndexer:
     def __init__(self):
@@ -90,3 +96,10 @@ def processData(qaPairs):
     # print (wordIndexer.wordCount)
     return (wordIndexer, trainingPairs, testPairs)
 
+def varsFromPair(pair):
+    inputVar = Variable(torch.LongTensor(pair[0]).view(-1, 1))
+    targetVar = Variable(torch.LongTensor(pair[1]).view(-1, 1))
+    if use_cuda:
+        return (inputVar.cuda(), targetVar.cuda())
+    else:
+        return (inputVar, targetVar)
