@@ -1,6 +1,16 @@
 # coding:utf-8
-
 from config import *
+
+def is_digit_word(word):
+    return re.match(r'\d+', word)
+
+def varsFromPair(pair):
+    inputVar = Variable(torch.LongTensor(pair[0]).view(-1, 1))
+    targetVar = Variable(torch.LongTensor(pair[1]).view(-1, 1))
+    if use_cuda:
+        return (inputVar.cuda(), targetVar.cuda())
+    else:
+        return (inputVar, targetVar)
 
 def tokenizer(sentence):
     tokenized_list = []
@@ -22,20 +32,26 @@ class WordIndexer:
         self.wordCount = 4
 
     # index each word in the sentence and return a list of indices
-    def addSentence(self, sentence):
+    def addSentence(self, sentence, entity=list()):
         indexList = []
         tokenized = tokenizer(sentence)
         for word in tokenized:
-            indexList.append(self.addWord(word))
+            if word not in entity and not is_digit_word(word):
+                indexList.append(self.addWord(word))
+            else:
+                indexList.append(PAD)
         # append EOS at end of each sentence
         indexList.append(EOS)
         return tokenized, indexList
 
-    def indexSentence(self, sentence):
+    def indexSentence(self, sentence, entity=list()):
         indexList = []
         tokenized = tokenizer(sentence)
         for word in tokenized:
-            indexList.append(self.word2index.get(word, 3))
+            if word not in entity and not is_digit_word(word):
+                indexList.append(self.word2index.get(word, UNK))
+            else:
+                indexList.append(PAD)
         # append EOS at end of each sentence
         indexList.append(EOS)
         return tokenized, indexList
@@ -52,15 +68,6 @@ class WordIndexer:
             self.word2count[word] += 1
             index = self.word2index[word]
         return index
-
-
-def varsFromPair(pair):
-    inputVar = Variable(torch.LongTensor(pair[0]).view(-1, 1))
-    targetVar = Variable(torch.LongTensor(pair[1]).view(-1, 1))
-    if use_cuda:
-        return (inputVar.cuda(), targetVar.cuda())
-    else:
-        return (inputVar, targetVar)
 
 class DataLoader(object):
     def __init__(self, data_path, min_frq=0, max_vocab_size=0):
@@ -91,16 +98,15 @@ class DataLoader(object):
                 sub, rel, obj = [w.strip() for w in parts]
                 # TODO: Improve the KB embedding/how to interpret KB
                 entities.add(sub)
-                entities.add(obj)
+                if not is_digit_word(obj):
+                    self.wordIndexer.addWord(obj)
                 relations.add(rel)
 
                 facts = self.entity_facts.get(sub, list())
                 facts.append((sub, rel, obj))
                 self.entity_facts[sub] = facts
-        self.kb_relations = list(relations)
-        self.kb_entities = list(entities)
-        for ent in self.kb_entities:
-            self.wordIndexer.addWord(ent)
+        self.kb_relations = relations
+        self.kb_entities = entities
         for rel in self.kb_relations:
             self.wordIndexer.addWord(rel)
         for sub in self.entity_facts.keys():
@@ -123,11 +129,11 @@ class DataLoader(object):
             question, answer = qaPairs[i]
             is_training_data = i < split
             if is_training_data:
-                question, question_ids = self.wordIndexer.addSentence(question)
-                answer, answer_ids = self.wordIndexer.addSentence(answer)
+                question, question_ids = self.wordIndexer.addSentence(question, self.kb_entities)
+                answer, answer_ids = self.wordIndexer.addSentence(answer, self.kb_entities)
             else:
-                question, question_ids = self.wordIndexer.indexSentence(question)
-                answer, answer_ids = self.wordIndexer.indexSentence(answer)
+                question, question_ids = self.wordIndexer.indexSentence(question, self.kb_entities)
+                answer, answer_ids = self.wordIndexer.indexSentence(answer, self.kb_entities)
 
             kb_facts,kb_facts_ids = [], []
             for word in question:
@@ -139,7 +145,7 @@ class DataLoader(object):
                 for pad_index in range(self.max_fact_num - len(kb_facts)):
                     kb_facts.append(("_PAD", "_PAD", "_PAD"))
             for (sub, rel, obj) in kb_facts:
-                kb_facts_ids.append((self.wordIndexer.word2index[sub],self.wordIndexer.word2index[rel],self.wordIndexer.word2index[obj]))
+                kb_facts_ids.append((self.wordIndexer.word2index.get(sub, PAD),self.wordIndexer.word2index.get(rel, PAD),self.wordIndexer.word2index.get(obj, PAD)))
             fact_objs = [x[2] for x in kb_facts]
 
             answer_modes = []
@@ -168,7 +174,7 @@ class DataLoader(object):
                                            answer_modes, answ4ques_locs, answ4kb_locs))
 
         print('Processing done.', len(self.training_data), 'training pairs,', len(self.testing_data), 'test pairs.')
-        print('QA pairs vocab size: ', self.wordIndexer.wordCount)
+        print('Total vocab size: ', self.wordIndexer.wordCount)
 
 
 
