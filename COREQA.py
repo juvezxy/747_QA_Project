@@ -42,14 +42,22 @@ class COREQA(object):
             self.encoderOptimizer.zero_grad()
             self.decoderOptimizer.zero_grad()
 
-            encoderHidden = self.encoder.initHidden()
-            for i in range(inputLength):
-                encoderOutput, encoderHidden = self.encoder(inputVar[i], encoderHidden)
+            self.encoder.hidden = self.encoder.initHidden()
+            #for i in range(inputLength):
+            #    encoderOutput, encoderHidden = self.encoder(inputVar[i], encoderHidden)
+            encoderOutputs = self.encoder(inputVar)
+            # pad encodeOutputs to MAX_LENGTH
+            encoderOutputs = encoderOutputs.view(len(encoderOutputs), -1)
+            padding = (0, 0, 0, self.MAX_LENGTH - len(encoderOutputs))
+            encoderOutputs = F.pad(encoderOutputs, padding)
+            encoderOutputs = Variable(encoderOutputs)
+            if use_cuda:
+                encoderOutputs = encoderOutputs.cuda()
 
             decoderInput = Variable(torch.LongTensor([[SOS]]))
             if use_cuda:
                 decoderInput = decoderInput.cuda()
-            decoderHidden = encoderHidden
+            decoderHidden = self.encoder.hidden
             loss = 0
 
             for i in range(targetLength):
