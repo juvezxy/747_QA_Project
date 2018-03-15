@@ -58,28 +58,45 @@ class COREQA(object):
             self.encoder.hidden = self.encoder.initHidden()
             #for i in range(inputLength):
             #    encoderOutput, encoderHidden = self.encoder(inputVar[i], encoderHidden)
-            encoderOutputs = self.encoder(ques_var)
+            encoder_outputs = self.encoder(ques_var)
             # pad encodeOutputs to MAX_LENGTH
-            encoderOutputs = encoderOutputs.view(len(encoderOutputs), -1)
-            padding = (0, 0, 0, self.MAX_LENGTH - len(encoderOutputs))
-            encoderOutputs = F.pad(encoderOutputs, padding)
-            encoderOutputs = Variable(encoderOutputs)
+            #encoder_outputs = encoder_outputs.view(len(encoder_outputs), -1)
+            #padding = (0, 0, 0, self.MAX_LENGTH - len(encoder_outputs))
+            #encoder_outputs = F.pad(encoder_outputs, padding)
+            encoder_outputs = Variable(encoder_outputs)
             if use_cuda:
-                encoderOutputs = encoderOutputs.cuda()
+                encoder_outputs = encoder_outputs.cuda()
 
-            decoderInput = Variable(torch.LongTensor([[SOS]]))
+            decoder_input = Variable(torch.LongTensor([[SOS]]))
             if use_cuda:
                 decoderInput = decoderInput.cuda()
-            decoderHidden = self.encoder.hidden
+            decoder_hidden = self.encoder.hidden
             loss = 0
-
+            decoder_input_embedded = Variable(torch.zeros(1, 1, 3 * self.embedding_size + 2 * self.state_size))
             for i in range(targetLength):
-                decoderOutput, decoderHidden = self.decoder(decoderInput, decoderHidden)
+                decoder_output, decoder_hidden = self.decoder(decoder_input_embedded, decoder_hidden)
                 loss += criterion(decoderOutput, answ_var[i])
-                decoderInput = answ_var[i]
+                decoder_input = answ_var[i]
 
-
-
+                word_embedded = self.embedding(decoder_input).view(1, 1, -1)
+                question_match_count = 0
+                weighted_question_encoding = Variable(torch.zeros(1, 1, 2 * self.state_size))
+                kb_facts_match_count = 0
+                weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, 2 * self.embedding_size))
+                for ques_pos in len(ques_var):
+                    if ques_var[ques_pos][0] == decoder_input:
+                        weighted_question_encoding += encoder_outputs[ques_pos][0]
+                        question_match_count += 1
+                if question_match_count > 0:
+                    weighted_question_encoding /= question_match_count
+                for kb_idx in len(kb_var_list):
+                    rel_obj = kb_var_list[kb_idx]
+                    if rel_obj[1] == decoder_input:
+                        weighted_kb_facts_encoding += kb_facts_embedded[kb_idx][0][0]
+                        kb_facts_match_count += 1
+                if kb_facts_match_count > 0:
+                    weighted_kb_facts_encoding /= kb_facts_match_count
+                decoder_input_embedded = torch.cat(word_embedded, weighted_question_encoding, weighted_kb_facts_encoding)
 
             loss.backward()
 

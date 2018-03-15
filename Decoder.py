@@ -12,11 +12,8 @@ class Decoder(nn.Module):
         self.out = nn.Linear(hidden_size, output_size)
         self.softmax = nn.LogSoftmax(dim=1)
 
-    def forward(self, input, hidden):
-        # KB
-
-        embedded = self.embedding(input).view(1, 1, -1)
-        output = F.relu(embedded)
+    def forward(self, input_embedded, hidden):
+        output = F.relu(input_embedded)
         output, hidden = self.lstm(output, hidden)
         output = self.softmax(self.out(output[0]))
         return output, hidden
