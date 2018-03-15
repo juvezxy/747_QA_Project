@@ -4,13 +4,12 @@ from __future__ import unicode_literals, print_function, division
 from config import *
 
 class Decoder(nn.Module):
-    def __init__(self, outputSize, hiddenSize):
+    def __init__(self, output_size, hidden_size, embedding):
         super(Decoder, self).__init__()
         self.hiddenSize = hiddenSize
-        self.embedding = nn.Embedding(outputSize, hiddenSize)
-        #self.gru = nn.GRU(hiddenSize, hiddenSize)
-        self.lstm = nn.LSTM(hiddenSize, hiddenSize)
-        self.out = nn.Linear(hiddenSize, outputSize)
+        self.embedding = embedding
+        self.lstm = nn.LSTM(embedding.weight.size()[1], hidden_size)
+        self.out = nn.Linear(hidden_size, output_size)
         self.softmax = nn.LogSoftmax(dim=1)
 
     def forward(self, input, hidden):

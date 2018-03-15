@@ -4,12 +4,11 @@ from __future__ import unicode_literals, print_function, division
 from config import *
 
 class Encoder(nn.Module):
-    def __init__(self, inputSize, hiddenSize):
+    def __init__(self, input_size, hidden_size, embedding):
         super(Encoder, self).__init__()
-        self.hiddenSize = hiddenSize
-        self.embedding = nn.Embedding(inputSize, hiddenSize)
-        #self.gru = nn.GRU(hiddenSize, hiddenSize)
-        self.lstm = nn.LSTM(hiddenSize, hiddenSize, bidirectional=True)
+        self.hiddenSize = hidden_size
+        self.embedding = embedding
+        self.lstm = nn.LSTM(embedding.weight.size()[1], hidden_size, bidirectional=True)
         self.hidden = self.initHidden()
 
     def forward(self, input_sent):

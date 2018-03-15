@@ -16,10 +16,9 @@ class COREQA(object):
         self.has_trained = False
 
         self.embedding = nn.Embedding(self.word_indexer.wordCount, self.embedding_size)
-        self.encoder = Encoder(self.word_indexer.wordCount, self.state_size)
-        self.decoder = Decoder(self.word_indexer.wordCount, self.state_size)
-        self.encoderOptimizer = optim.Adam(self.encoder.parameters(), lr=self.learning_rate)
-        self.decoderOptimizer = optim.Adam(self.decoder.parameters(), lr=self.learning_rate)
+        self.encoder = Encoder(self.word_indexer.wordCount, self.state_size, self.embedding)
+        self.decoder = Decoder(self.word_indexer.wordCount, self.state_size, self.embedding)
+        self.optimizer = optim.Adam(list(self.encoder.parameters())+list(self.decoder.parameters()), lr=self.learning_rate)
 
         if use_cuda:
             self.encoder.cuda()
