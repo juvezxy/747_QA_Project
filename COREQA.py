@@ -8,24 +8,26 @@ from config import *
 class COREQA(object):
 
     def __init__(self, model_params):
-        self.wordIndexer = model_params["wordIndexer"]
-        self.embeddingSize = model_params["embeddingSize"]
-        self.learningRate = model_params["learningRate"]
+        self.word_indexer = model_params["word_indexer"]
+        self.embedding_size = model_params["embedding_size"]
+        self.state_size = model_params["state_size"]
+        self.learning_rate = model_params["learning_rate"]
         self.MAX_LENGTH = model_params["MAX_LENGTH"]
-        self.hasTrained = False
+        self.has_trained = False
 
-        self.encoder = Encoder(self.wordIndexer.wordCount, self.embeddingSize)
-        self.decoder = Decoder(self.wordIndexer.wordCount, self.embeddingSize)
-        self.encoderOptimizer = optim.Adam(self.encoder.parameters(), lr=self.learningRate)
-        self.decoderOptimizer = optim.Adam(self.decoder.parameters(), lr=self.learningRate)
+        self.embedding = nn.Embedding(self.word_indexer.wordCount, self.embedding_size)
+        self.encoder = Encoder(self.word_indexer.wordCount, self.state_size)
+        self.decoder = Decoder(self.word_indexer.wordCount, self.state_size)
+        self.encoderOptimizer = optim.Adam(self.encoder.parameters(), lr=self.learning_rate)
+        self.decoderOptimizer = optim.Adam(self.decoder.parameters(), lr=self.learning_rate)
 
         if use_cuda:
             self.encoder.cuda()
             self.decoder.cuda()
 
 
-    def fit(self, pairs):
-        if self.hasTrained:
+    def fit(self, training_data):
+        if self.has_trained:
             print('Warning! Trying to fit a trained model.')
 
         print('Start training ...')
@@ -34,7 +36,7 @@ class COREQA(object):
 
         criterion = nn.NLLLoss()
 
-        for iter in range(len(pairs)):
+        for iter in range(len(training_data)):
             inputVar, targetVar = varsFromPair(pairs[iter])
             #inputLength = inputVar.size()[0]
             targetLength = targetVar.size()[0]
@@ -79,11 +81,11 @@ class COREQA(object):
                 secs -= mins * 60
                 print('%dm %ds' % (mins, secs), 'after iteration:', iter + 1, 'with avg loss:', lossAvg)
 
-        self.hasTrained = True
+        self.has_trained = True
         print('Training completed!')
 
     def predict(self, inputVar):
-        if self.hasTrained:
+        if self.has_trained:
             print('Warning! Trying to predict without training!')
 
         #inputLength = inputVar.size()[0]

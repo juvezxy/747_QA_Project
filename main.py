@@ -10,20 +10,20 @@ if __name__ == '__main__':
     # Process Data
     data_loader = DataLoader(syn_data_path)
 
-
-    '''
     # Init Model
     model_params = {}
-    model_params["wordIndexer"] = wordIndexer
-    model_params["embeddingSize"] = 300
-    model_params["learningRate"] = 0.01
-    model_params["MAX_LENGTH"] = 20
+    model_params["word_indexer"] = data_loader.wordIndexer
+    model_params["embedding_size"] = 300
+    model_params["state_size"] = 1024
+    model_params["learning_rate"] = 0.01
+    model_params["MAX_LENGTH"] = 10
 
     model = COREQA(model_params)
 
     # Train Model
-    model.fit(trainingPairs)
+    model.fit(data_loader.training_data)
 
+    '''
     # Evaluate
     evaluate(model, testPairs, wordIndexer)
     '''
