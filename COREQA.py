@@ -36,7 +36,7 @@ class COREQA(object):
 
         for iter in range(len(pairs)):
             inputVar, targetVar = varsFromPair(pairs[iter])
-            inputLength = inputVar.size()[0]
+            #inputLength = inputVar.size()[0]
             targetLength = targetVar.size()[0]
 
             self.encoderOptimizer.zero_grad()
@@ -86,16 +86,17 @@ class COREQA(object):
         if self.hasTrained:
             print('Warning! Trying to predict without training!')
 
-        inputLength = inputVar.size()[0]
+        #inputLength = inputVar.size()[0]
 
-        encoderHidden = self.encoder.initHidden()
-        for i in range(inputLength):
-            encoderOutput, encoderHidden = self.encoder(inputVar[i], encoderHidden)
-
+        self.encoder.hidden = self.encoder.initHidden()
+        #for i in range(inputLength):
+        #    encoderOutput, encoderHidden = self.encoder(inputVar[i], encoderHidden)
+        encoderOutputs = self.encoder(inputVar)
+        
         decoderInput = Variable(torch.LongTensor([[SOS]]))
         if use_cuda:
             decoderInput = decoderInput.cuda()
-        decoderHidden = encoderHidden
+        decoderHidden = self.encoder.hidden
         decoded = []
         for i in range(self.MAX_LENGTH):
             decoderOutput, decoderHidden = self.decoder(decoderInput, decoderHidden)
