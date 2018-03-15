@@ -8,9 +8,10 @@ from config import *
 
 if __name__ == '__main__':
     # Process Data
-    qaPairs = loadData(synDataPath)
-    wordIndexer, trainingPairs, testPairs = processData(qaPairs)
+    data_loader = DataLoader(syn_data_path)
 
+
+    '''
     # Init Model
     model_params = {}
     model_params["wordIndexer"] = wordIndexer
@@ -25,3 +26,4 @@ if __name__ == '__main__':
 
     # Evaluate
     evaluate(model, testPairs, wordIndexer)
+    '''

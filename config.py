@@ -2,6 +2,7 @@
 from __future__ import unicode_literals, print_function, division
 from io import open
 import math
+from random import shuffle
 import time
 import re
 import random
@@ -23,7 +24,9 @@ dayPattern = re.compile('\d+[日|号]')
 
 SOS = 0
 EOS = 1
+PAD = 2
+UNK = 3
 
-toyDataPath = "toypairs"
-synDataPath = "coreqa_data/syn_data/qa_pairs"
-cqaDataPath = "coreqa_data/cqa_data/cqa_triple_origina_v0"
+toy_data_path = "toypairs"
+syn_data_path = "coreqa_data/syn_data/"
+cqa_data_path = "coreqa_data/cqa_data/cqa_triple_origina_v0"
