@@ -37,7 +37,7 @@ class COREQA(object):
         criterion = nn.NLLLoss()
 
         for iter in range(len(training_data)):
-            inputVar, targetVar = varsFromPair(pairs[iter])
+            inputVar, targetVar = varsFromPair(training_data[iter])
             #inputLength = inputVar.size()[0]
             targetLength = targetVar.size()[0]
 
