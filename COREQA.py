@@ -31,22 +31,34 @@ class COREQA(object):
 
         print('Start training ...')
         startTime = time.time()
-        lossTotal = 0
 
+        lossTotal = 0
         criterion = nn.NLLLoss()
 
         for iter in range(len(training_data)):
-            inputVar, targetVar = varsFromPair(training_data[iter])
-            #inputLength = inputVar.size()[0]
-            targetLength = targetVar.size()[0]
+            ques_var, answ_var, kb_var_list  = vars_from_data(training_data[iter])
 
-            self.encoderOptimizer.zero_grad()
-            self.decoderOptimizer.zero_grad()
+
+            #################### Process KB facts ###############################
+            kb_facts_embedded = []
+            for rel_obj in kb_var_list:
+                rel_embedded = self.embedding(rel_obj[0]).view(1, 1, -1)
+                obj_embedded = self.embedding(rel_obj[1]).view(1, 1, -1)
+                kb_facts_embedded.append(torch.cat((rel_embedded, obj_embedded), 2))
+
+    
+            #####################################################################
+
+            targetLength = answ_var.size()[0]
+
+            # Build graph
+            self.optimizer.zero_grad()
+
 
             self.encoder.hidden = self.encoder.initHidden()
             #for i in range(inputLength):
             #    encoderOutput, encoderHidden = self.encoder(inputVar[i], encoderHidden)
-            encoderOutputs = self.encoder(inputVar)
+            encoderOutputs = self.encoder(ques_var)
             # pad encodeOutputs to MAX_LENGTH
             encoderOutputs = encoderOutputs.view(len(encoderOutputs), -1)
             padding = (0, 0, 0, self.MAX_LENGTH - len(encoderOutputs))
@@ -63,8 +75,12 @@ class COREQA(object):
 
             for i in range(targetLength):
                 decoderOutput, decoderHidden = self.decoder(decoderInput, decoderHidden)
-                loss += criterion(decoderOutput, targetVar[i])
-                decoderInput = targetVar[i]
+                loss += criterion(decoderOutput, answ_var[i])
+                decoderInput = answ_var[i]
+
+
+
+
             loss.backward()
 
             self.encoderOptimizer.step()

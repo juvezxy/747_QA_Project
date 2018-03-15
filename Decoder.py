@@ -6,7 +6,7 @@ from config import *
 class Decoder(nn.Module):
     def __init__(self, output_size, hidden_size, embedding):
         super(Decoder, self).__init__()
-        self.hiddenSize = hiddenSize
+        self.hidden_size = hidden_size
         self.embedding = embedding
         self.lstm = nn.LSTM(embedding.weight.size()[1], hidden_size)
         self.out = nn.Linear(hidden_size, output_size)
@@ -22,8 +22,8 @@ class Decoder(nn.Module):
         return output, hidden
 
     def initHidden(self):
-        h = Variable(torch.zeros(2, 1, self.hiddenSize))
-        c = Variable(torch.zeros(2, 1, self.hiddenSize))
+        h = Variable(torch.zeros(2, 1, self.hidden_size))
+        c = Variable(torch.zeros(2, 1, self.hidden_size))
         if use_cuda:
             return (h.cuda(), c.cuda())
         else:

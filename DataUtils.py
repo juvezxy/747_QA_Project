@@ -4,13 +4,16 @@ from config import *
 def is_digit_word(word):
     return re.match(r'\d+', word)
 
-def varsFromPair(pair):
-    inputVar = Variable(torch.LongTensor(pair[0]).view(-1, 1))
-    targetVar = Variable(torch.LongTensor(pair[1]).view(-1, 1))
+def vars_from_data(data):
+    question, answer, question_ids, answer_ids, kb_facts, kb_facts_ids, answer_modes, answ4ques_locs, answ4kb_locs = data
+    ques_var = Variable(torch.LongTensor(question_ids).view(-1, 1))
+    answ_var = Variable(torch.LongTensor(answer_ids).view(-1, 1))
+    kb_var = [Variable(torch.LongTensor(kb_fact_id).view(-1, 1)) for kb_fact_id in kb_facts_ids]
     if use_cuda:
-        return (inputVar.cuda(), targetVar.cuda())
+        kb_var = [kb_fact_var.cuda() for kb_fact_var in kb_var]
+        return (ques_var.cuda(), answ_var.cuda(), kb_var)
     else:
-        return (inputVar, targetVar)
+        return (ques_var, answ_var, kb_var)
 
 def tokenizer(sentence):
     tokenized_list = []
@@ -145,7 +148,7 @@ class DataLoader(object):
                 for pad_index in range(self.max_fact_num - len(kb_facts)):
                     kb_facts.append(("_PAD", "_PAD", "_PAD"))
             for (sub, rel, obj) in kb_facts:
-                kb_facts_ids.append((self.wordIndexer.word2index.get(sub, PAD),self.wordIndexer.word2index.get(rel, PAD),self.wordIndexer.word2index.get(obj, PAD)))
+                kb_facts_ids.append((self.wordIndexer.word2index.get(rel, PAD),self.wordIndexer.word2index.get(obj, PAD)))
             fact_objs = [x[2] for x in kb_facts]
 
             answer_modes = []

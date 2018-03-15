@@ -6,7 +6,7 @@ from config import *
 class Encoder(nn.Module):
     def __init__(self, input_size, hidden_size, embedding):
         super(Encoder, self).__init__()
-        self.hiddenSize = hidden_size
+        self.hidden_size = hidden_size
         self.embedding = embedding
         self.lstm = nn.LSTM(embedding.weight.size()[1], hidden_size, bidirectional=True)
         self.hidden = self.initHidden()
@@ -17,8 +17,8 @@ class Encoder(nn.Module):
         return outputs
 
     def initHidden(self):
-        h = Variable(torch.zeros(2, 1, self.hiddenSize))
-        c = Variable(torch.zeros(2, 1, self.hiddenSize))
+        h = Variable(torch.zeros(2, 1, self.hidden_size))
+        c = Variable(torch.zeros(2, 1, self.hidden_size))
         if use_cuda:
             return (h.cuda(), c.cuda())
         else:
