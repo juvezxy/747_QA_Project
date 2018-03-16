@@ -23,7 +23,7 @@ class COREQA(object):
         ################ Initialize graph components ########################
         self.embedding = nn.Embedding(self.word_indexer.wordCount, self.embedding_size)
         self.encoder = Encoder(self.word_indexer.wordCount, self.state_size, self.embedding)
-        self.decoder = Decoder(self.word_indexer.wordCount, self.state_size, self.embedding)
+        self.decoder = Decoder(self.word_indexer.wordCount, self.state_size, self.embedding, self.kb_attention_size, self.max_fact_num)
 
         if use_cuda:
             self.encoder.cuda()
@@ -48,7 +48,8 @@ class COREQA(object):
 
         for iter in range(len(training_data)):
             ques_var, answ_var, kb_var_list  = vars_from_data(training_data[iter])
-
+            answ_length = answ_var.size()[0]
+            self.optimizer.zero_grad()
 
             #################### Process KB facts ###############################
             kb_facts_embedded = []
@@ -57,13 +58,8 @@ class COREQA(object):
                 obj_embedded = self.embedding(rel_obj[1]).view(1, 1, -1)
                 kb_facts_embedded.append(torch.cat((rel_embedded, obj_embedded), 2))
             avg_kb_facts_embedded = kb_facts_embedded[-1]
-
             #####################################################################
 
-            answ_length = answ_var.size()[0]
-
-            # Build graph
-            self.optimizer.zero_grad()
 
             ######################### Encoding ###################################
             self.encoder.hidden = self.encoder.init_hidden()
@@ -81,15 +77,19 @@ class COREQA(object):
             cell_state = self.encoder.hidden[1].view(1, 1, -1)
             #####################################################################
 
+
+            ######################### Decoding ###################################
             decoder_hidden = (question_embedded, cell_state)
             decoder_input = Variable(torch.LongTensor([[SOS]]))
+            hist_kb = Variable(torch.zeros(1, 1, self.max_fact_num))
             if use_cuda:
                 decoder_input = decoder_input.cuda()
 
             loss = 0
             decoder_input_embedded = Variable(torch.zeros(1, 1, 3 * self.embedding_size + 2 * self.state_size))
             for i in range(answ_length):
-                decoder_output, decoder_hidden = self.decoder(decoder_input_embedded, decoder_hidden)
+                decoder_output, decoder_hidden = self.decoder(decoder_input_embedded, decoder_hidden, question_embedded,
+                                                              kb_facts_embedded, hist_kb)
                 loss += criterion(decoder_output, answ_var[i])
                 decoder_input = answ_var[i]
 
@@ -112,6 +112,8 @@ class COREQA(object):
                 if kb_facts_match_count > 0:
                     weighted_kb_facts_encoding /= kb_facts_match_count
                 decoder_input_embedded = torch.cat(word_embedded, weighted_question_encoding, weighted_kb_facts_encoding)
+
+            #####################################################################
 
             loss.backward()
 
