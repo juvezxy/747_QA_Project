@@ -15,7 +15,6 @@ class Decoder(nn.Module):
         self.max_fact_num = max_fact_num
         self.lstm = nn.LSTM(self.embedding_size, self.state_size) #TODO: change embedding size to the new embedding mode
         self.out = nn.Linear(self.state_size, self.output_size)
-        self.softmax = nn.LogSoftmax(dim=1)
 
         # mode prediction network
         self.mode_state_size = self.embedding_size + self.state_size
@@ -49,9 +48,8 @@ class Decoder(nn.Module):
         hist_kb += kb_atten_predict
         #####################################################################
 
-
-        output = self.softmax(self.out(output[0]))
-        return output, hidden, mode_predict, kb_atten_predict, hist_kb
+        common_predict = self.out(output)
+        return common_predict, hidden, mode_predict, kb_atten_predict, hist_kb
 
     def init_hidden(self):
         h = Variable(torch.zeros(1, 1, self.state_size))
