@@ -109,12 +109,20 @@ class COREQA(object):
                         kb_facts_match_count += 1
                 if kb_facts_match_count > 0:
                     weighted_kb_facts_encoding /= kb_facts_match_count
-                decoder_input_embedded = torch.cat(word_embedded, weighted_question_encoding, weighted_kb_facts_encoding)
+                decoder_input_embedded = torch.cat((word_embedded, weighted_question_encoding,
+                                                   weighted_kb_facts_encoding, avg_kb_facts_embedded), 2)
 
-                decoder_output, decoder_hidden = self.decoder(word_embedded, decoder_input_embedded, decoder_hidden, question_embedded,
-                                                              kb_facts_embedded, hist_kb)
-                
-                loss += criterion(decoder_output, answ_var[i])
+                common_predict, decoder_hidden, mode_predict, kb_atten_predict, hist_kb = self.decoder(word_embedded,
+                                                                                               decoder_input_embedded,
+                                                                                               decoder_hidden,
+                                                                                               question_embedded,
+                                                                                               kb_facts_embedded,
+                                                                                               hist_kb)
+
+
+
+
+
                 decoder_input = answ_var[i]
 
                 

@@ -13,7 +13,8 @@ class Decoder(nn.Module):
         self.mode_size = mode_size
         self.kb_attention_size = kb_attention_size
         self.max_fact_num = max_fact_num
-        self.lstm = nn.LSTM(self.embedding_size, self.state_size) #TODO: change embedding size to the new embedding mode
+        self.lstm_input_size = 5 * self.embedding_size + self.state_size
+        self.lstm = nn.LSTM(self.lstm_input_size, self.state_size)
         self.out = nn.Linear(self.state_size, self.output_size)
 
         # mode prediction network
@@ -28,8 +29,8 @@ class Decoder(nn.Module):
         self.kb_atten_mlp_w2 = nn.Linear(self.kb_attention_size, 1)
 
     def forward(self, input_embedded, input_cat, hidden, question_embedded, kb_facts_embedded, hist_kb):
-        output = F.relu(input_cat)
-        output, hidden = self.lstm(output, hidden)
+        #output = F.relu(input_cat)
+        output, hidden = self.lstm(input_cat, hidden)
 
         state = hidden[0]
         ##################### Mode prediction ###############################
