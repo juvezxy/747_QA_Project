@@ -19,6 +19,7 @@ if __name__ == '__main__':
     model_params["ques_attention_size"] = 200
     model_params["kb_attention_size"] = 200
     model_params["learning_rate"] = 0.01
+    model_params["mode_loss_rate"] = 0.5
     model_params["L2_factor"] = 0.0001
     model_params["max_fact_num"] = 4
     model_params["MAX_LENGTH"] = 20
@@ -28,7 +29,5 @@ if __name__ == '__main__':
     # Train Model
     model.fit(data_loader.training_data)
 
-    '''
     # Evaluate
-    evaluate(model, testPairs, wordIndexer)
-    '''
+    #evaluate(model, testPairs, wordIndexer)

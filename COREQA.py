@@ -17,6 +17,7 @@ class COREQA(object):
         self.max_fact_num = model_params["max_fact_num"]
 
         self.learning_rate = model_params["learning_rate"]
+        self.mode_loss_rate = model_params["mode_loss_rate"]
         self.L2_factor = model_params["L2_factor"]
         self.MAX_LENGTH = model_params["MAX_LENGTH"]
         self.has_trained = False
@@ -27,17 +28,13 @@ class COREQA(object):
         self.decoder = Decoder(output_size=self.word_indexer.wordCount, state_size=self.state_size,
                                embedding=self.embedding, mode_size=self.mode_size,
                                kb_attention_size=self.kb_attention_size, max_fact_num=self.max_fact_num)
-
         if use_cuda:
             self.encoder.cuda()
             self.decoder.cuda()
-        #####################################################################
 
         self.optimizer = optim.Adam(list(self.encoder.parameters()) + list(self.decoder.parameters()),
                                     lr=self.learning_rate, weight_decay=self.L2_factor)
-
-
-
+        #####################################################################
 
     def fit(self, training_data):
         if self.has_trained:
@@ -45,10 +42,8 @@ class COREQA(object):
 
         print('Start training ...')
         startTime = time.time()
-
-        lossTotal = 0
-        criterion = nn.NLLLoss()
-
+        lossTotal = 0.0
+        XEnLoss = nn.CrossEntropyLoss()
         for iter in range(len(training_data)):
             ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list = vars_from_data(
                 training_data[iter])
@@ -65,18 +60,9 @@ class COREQA(object):
             #####################################################################
 
 
-            ######################### Encoding ###################################
+            ######################### Encoding ##################################
             self.encoder.hidden = self.encoder.init_hidden()
-
             encoder_outputs = self.encoder(ques_var)
-            # pad encodeOutputs to MAX_LENGTH
-            #encoder_outputs = encoder_outputs.view(len(encoder_outputs), -1)
-            #padding = (0, 0, 0, self.MAX_LENGTH - len(encoder_outputs))
-            #encoder_outputs = F.pad(encoder_outputs, padding)
-            #encoder_outputs = Variable(encoder_outputs)
-            if use_cuda:
-                encoder_outputs = encoder_outputs.cuda()
-
             question_embedded = self.encoder.hidden[0].view(1, 1, -1)
             cell_state = self.encoder.hidden[1].view(1, 1, -1)
             #####################################################################
@@ -91,10 +77,8 @@ class COREQA(object):
                 hist_kb = hist_kb.cuda()
 
             loss = 0.0
-            
             for i in range(answ_length):
                 answer_mode = answer_modes_var_list[i]
-
                 word_embedded = self.embedding(decoder_input).view(1, 1, -1)
                 weighted_question_encoding = Variable(torch.zeros(1, 1, 2 * self.state_size))
                 weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, 2 * self.embedding_size))
@@ -130,11 +114,9 @@ class COREQA(object):
                                                                                                kb_facts_embedded,
                                                                                                hist_kb)
 
-                # loss section
-                mode_loss = nn.CrossEntropyLoss()
+                ###################### Calculate Loss ################################
                 # TODO: add weight for mini-batch
-                loss += mode_loss(mode_predict.view(1,-1), answer_mode)
-
+                loss += self.mode_loss_rate * XEnLoss(mode_predict.view(1,-1), answer_mode)
 
                 mode_predict = nn.Softmax(dim=2)(mode_predict).view(2, 1)
                 common_mode_predict = mode_predict[0]
@@ -146,21 +128,17 @@ class COREQA(object):
                 else: # retrieve mode
                     kb_locs = answ4kb_locs_var_list[i][0][0]
                     target = self.word_indexer.wordCount + kb_locs.data.tolist().index(1)
-                    target = Variable(torch.LongTensor([target]).view(-1))
-                loss += mode_loss(predicted_probs.view(1,-1), target)
+                    target = Variable(torch.LongTensor([target]).view(-1)).cuda()
+                loss += XEnLoss(predicted_probs.view(1,-1), target)
+                #####################################################################
 
                 decoder_input = answ_var[i]
-
-                
-
             #####################################################################
 
             loss.backward()
-
             self.optimizer.step()
 
             loss =  loss.data[0] / answ_length
-
             lossTotal += loss
             if (iter + 1) % 1000 == 0:
                 lossAvg = lossTotal / 1000
