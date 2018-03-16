@@ -151,22 +151,95 @@ class COREQA(object):
         self.has_trained = True
         print('Training completed!')
 
-    def predict(self, inputVar):
-        if self.has_trained:
-            print('Warning! Trying to predict without training!')
-
+    def predict(self, ques_var, kb_var_list):
         #inputLength = inputVar.size()[0]
 
-        self.encoder.hidden = self.encoder.initHidden()
-        #for i in range(inputLength):
-        #    encoderOutput, encoderHidden = self.encoder(inputVar[i], encoderHidden)
-        encoderOutputs = self.encoder(inputVar)
-        
-        decoderInput = Variable(torch.LongTensor([[SOS]]))
+        #################### Process KB facts ###############################
+        kb_facts_embedded = []
+        for rel_obj in kb_var_list:
+            rel_embedded = self.embedding(rel_obj[0]).view(1, 1, -1)
+            obj_embedded = self.embedding(rel_obj[1]).view(1, 1, -1)
+            kb_facts_embedded.append(torch.cat((rel_embedded, obj_embedded), 2))
+        avg_kb_facts_embedded = kb_facts_embedded[-1]
+        #####################################################################
+
+
+        ######################### Encoding ##################################
+        self.encoder.hidden = self.encoder.init_hidden()
+        encoder_outputs = self.encoder(ques_var)
+        question_embedded = self.encoder.hidden[0].view(1, 1, -1)
+        cell_state = self.encoder.hidden[1].view(1, 1, -1)
+        #####################################################################
+
+
+
+        ######################### Decoding ###################################
+        decoder_hidden = (question_embedded, cell_state)
+        decoder_input = Variable(torch.LongTensor([[SOS]]))
+        hist_kb = Variable(torch.zeros(1, 1, self.max_fact_num))
         if use_cuda:
-            decoderInput = decoderInput.cuda()
-        decoderHidden = self.encoder.hidden
+            decoder_input = decoder_input.cuda()
+            hist_kb = hist_kb.cuda()
+
         decoded = []
+        for i in range(self.MAX_LENGTH):
+            answer_mode = answer_modes_var_list[i]
+            word_embedded = self.embedding(decoder_input).view(1, 1, -1)
+            weighted_question_encoding = Variable(torch.zeros(1, 1, 2 * self.state_size))
+            weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, 2 * self.embedding_size))
+            if use_cuda:
+                weighted_question_encoding = weighted_question_encoding.cuda()
+                weighted_kb_facts_encoding = weighted_kb_facts_encoding.cuda()
+
+            '''
+            if (i > 0):
+                ques_locs = answ4ques_locs_var_list[i-1][0][0]
+                kb_locs = answ4kb_locs_var_list[i-1][0][0]
+                question_match_count = 0
+                kb_facts_match_count = 0
+                for ques_pos in range(len(ques_locs)):
+                    if ques_locs[ques_pos].data[0] == 1:
+                        weighted_question_encoding += encoder_outputs[ques_pos][0]
+                        question_match_count += 1
+                if question_match_count > 0:
+                    weighted_question_encoding /= question_match_count
+                for kb_idx in range(len(kb_locs)):
+                    if kb_locs[kb_idx].data[0] == 1:
+                        weighted_kb_facts_encoding += kb_facts_embedded[kb_idx][0][0]
+                        kb_facts_match_count += 1
+                if kb_facts_match_count > 0:
+                    weighted_kb_facts_encoding /= kb_facts_match_count
+            '''
+            question_match_count = 0
+            kb_facts_match_count = 0
+            for ques_pos in len(ques_var):
+                if ques_var.data[ques_pos][0] == decoder_input:
+                    weighted_question_encoding += encoder_outputs[ques_pos][0]
+                    question_match_count += 1
+            if question_match_count > 0:
+                weighted_question_encoding /= question_match_count
+            for kb_idx in len(kb_var_list):
+                rel_obj = kb_var_list[kb_idx]
+                if rel_obj.data[1] == decoder_input:
+                    weighted_kb_facts_encoding += kb_facts_embedded[kb_idx][0][0]
+                    kb_facts_match_count += 1
+            if kb_facts_match_count > 0:
+                weighted_kb_facts_encoding /= kb_facts_match_count
+
+            decoder_input_embedded = torch.cat((word_embedded, weighted_question_encoding,
+                                               weighted_kb_facts_encoding, avg_kb_facts_embedded), 2)
+
+            common_predict, decoder_hidden, mode_predict, kb_atten_predict, hist_kb = self.decoder(word_embedded,
+                                                                                           decoder_input_embedded,
+                                                                                           decoder_hidden,
+                                                                                           question_embedded,
+                                                                                           kb_facts_embedded,
+                                                                                           hist_kb)
+
+            decoder_input = answ_var[i]
+
+        
+
         for i in range(self.MAX_LENGTH):
             decoderOutput, decoderHidden = self.decoder(decoderInput, decoderHidden)
             topv, topi = decoderOutput.data.topk(1)

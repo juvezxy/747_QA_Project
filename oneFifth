@@ -1,0 +1,60 @@
+Reading from file coreqa_data/syn_data/qa_pairs ...
+239922 pairs read.
+Processing qa pairs ...
+Processing done. 215930 training pairs, 23992 test pairs.
+Training ...
+1m 51s after iteration: 1000 with avg loss: 3.878108067258128
+3m 41s after iteration: 2000 with avg loss: 3.9053064935836983
+5m 31s after iteration: 3000 with avg loss: 4.062995975944797
+7m 21s after iteration: 4000 with avg loss: 4.173794220724524
+9m 11s after iteration: 5000 with avg loss: 4.447452149828854
+11m 1s after iteration: 6000 with avg loss: 4.533832011165661
+12m 51s after iteration: 7000 with avg loss: 4.7804746483903955
+14m 42s after iteration: 8000 with avg loss: 4.62241672881486
+16m 32s after iteration: 9000 with avg loss: 4.84403201617685
+18m 22s after iteration: 10000 with avg loss: 4.573530945133922
+20m 11s after iteration: 11000 with avg loss: 4.545405114355885
+22m 1s after iteration: 12000 with avg loss: 4.711025386475411
+23m 52s after iteration: 13000 with avg loss: 4.605350092722329
+25m 42s after iteration: 14000 with avg loss: 4.72889716583104
+27m 32s after iteration: 15000 with avg loss: 4.716387152865788
+29m 21s after iteration: 16000 with avg loss: 4.996556373310983
+31m 12s after iteration: 17000 with avg loss: 4.792479543565154
+33m 2s after iteration: 18000 with avg loss: 4.830364682302089
+34m 51s after iteration: 19000 with avg loss: 4.737220465379978
+36m 41s after iteration: 20000 with avg loss: 5.0081180435436625
+38m 31s after iteration: 21000 with avg loss: 4.930167165652321
+40m 21s after iteration: 22000 with avg loss: 4.763440218911368
+42m 12s after iteration: 23000 with avg loss: 4.900879206849728
+44m 3s after iteration: 24000 with avg loss: 4.81977635699742
+45m 54s after iteration: 25000 with avg loss: 4.676303319879771
+47m 44s after iteration: 26000 with avg loss: 4.687414780670089
+49m 34s after iteration: 27000 with avg loss: 4.689004868669769
+51m 25s after iteration: 28000 with avg loss: 4.696908897079948
+53m 15s after iteration: 29000 with avg loss: 4.687173837004627
+55m 6s after iteration: 30000 with avg loss: 4.738550933321147
+56m 56s after iteration: 31000 with avg loss: 4.844122374619241
+58m 47s after iteration: 32000 with avg loss: 4.732753348280681
+60m 38s after iteration: 33000 with avg loss: 4.575049956397404
+62m 29s after iteration: 34000 with avg loss: 4.77353598434929
+64m 19s after iteration: 35000 with avg loss: 4.822882273139725
+66m 10s after iteration: 36000 with avg loss: 4.770607065725803
+68m 1s after iteration: 37000 with avg loss: 4.905825659304648
+69m 51s after iteration: 38000 with avg loss: 4.89941098791387
+71m 41s after iteration: 39000 with avg loss: 4.802697748722965
+73m 32s after iteration: 40000 with avg loss: 4.6601244332910765
+Evaluating ...
+['她', '出', '生于', '1937', '年', '11', '月', 'EOS']
+<ent_3320>出生于1948年2月
+['<ent_79998>', '出', '生于', '2', '月', 'EOS']
+<ent_6703>在5月出生
+['<ent_79996>', '的', '生日', '是', '1934', '年', '2', '月', '11', '日', 'EOS']
+她的生日是1911年12月16日
+['<ent_79995>', '是', '1934', '年', '出生', '的', 'EOS']
+她是1981年出生的
+Precision of gender: 0.5163710777626194
+Precision of year: 0.012405237767057202
+Precision of month: 0.09126506024096386
+Precision of day: 0.06560962274466922
+Precision: 0.12777135651991173
+Recall: 0.10533610533610534

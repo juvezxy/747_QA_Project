@@ -3,12 +3,14 @@
 from config import *
 from COREQA import *
 
-def evaluate(model, testPairs, wordIndexer):
+def evaluate(model, testing_data):
+    if not model.has_trained:
+        print('Warning! Trying to evaluate without training!')
     print('Evaluating ...')
     precisionTotal = 0
     recallTotal = 0
     F1Total = 0
-    testLength = len(testPairs)
+    test_length = len(testing_data)
     genderCorrect = 0
     genderPredicted = 0
     yearCorrect = 0
@@ -20,12 +22,17 @@ def evaluate(model, testPairs, wordIndexer):
     yearAppear = 0
     monthAppear = 0
     dayAppear = 0
-    for i in range(testLength):
-        inputSeq, target = testPairs[i]
-        inputVar = Variable(torch.LongTensor(inputSeq).view(-1, 1))
-        if use_cuda:
-            inputVar = inputVar.cuda()
-        predictedSeq = model.predict(inputVar)
+    for iter in range(test_length):
+        ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list = vars_from_data(
+            testing_data[iter])
+        #inputSeq, target = testPairs[iter]
+        #inputVar = Variable(torch.LongTensor(inputSeq).view(-1, 1))
+        #if use_cuda:
+        #    inputVar = inputVar.cuda()
+        #predictedSeq = model.predict(inputVar)
+
+        predictedSeq = model.predict(ques_var, kb_var_list)
+
         '''precision = precision_score(targetSeq, predictedSeq, average='micro')
         recall = recall_score(targetSeq, predictedSeq, average='micro')
         F1 = 2 * (precision * recall) / (precision + recall)
@@ -36,7 +43,7 @@ def evaluate(model, testPairs, wordIndexer):
             print ('Test size so far:', i, 'precision:', precisionTotal / (i+1), 'recall:', recallTotal / (i+1),
                 'F1:', F1Total / (i+1))
         '''
-        if (i + 1) % 1000 == 0:
+        if (iter + 1) % 1000 == 0:
             predicted = [wordIndexer.index2word[index] for index in predictedSeq]
             question = [wordIndexer.index2word[index] for index in inputSeq]
             print('Question:', question)
@@ -47,7 +54,7 @@ def evaluate(model, testPairs, wordIndexer):
         entity = wordIndexer.index2word[entIndex]
         entityNumber = int(re.findall('\d+', entity)[0])
         predictedEntity = entIndex in predictedSeq
-        predictedMale = wordIndexer.word2index['他'] in predictedSeq
+        predictedMale = model.word_indexer.word2index['他'] in predictedSeq
         predictedFemale = wordIndexer.word2index['她'] in predictedSeq
         if predictedEntity or predictedMale or predictedFemale:
             genderPredicted += 1
@@ -57,9 +64,9 @@ def evaluate(model, testPairs, wordIndexer):
         yearMatch = yearPattern.search(target)
         monthMatch = monthPattern.search(target)
         dayMatch = dayPattern.search(target)
-        yearPredicted += wordIndexer.word2index['年'] in predictedSeq
-        monthPredicted += wordIndexer.word2index['月'] in predictedSeq
-        dayPredicted += wordIndexer.word2index['日'] in predictedSeq or wordIndexer.word2index['号'] in predictedSeq
+        yearPredicted += model.word_indexer.word2index['年'] in predictedSeq
+        monthPredicted += model.word_indexer.word2index['月'] in predictedSeq
+        dayPredicted += model.word_indexer.word2index['日'] in predictedSeq or wordIndexer.word2index['号'] in predictedSeq
 
         if (yearMatch):
             yearAppear += 1
