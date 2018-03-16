@@ -30,4 +30,4 @@ if __name__ == '__main__':
     model.fit(data_loader.training_data)
 
     # Evaluate
-    #evaluate(model, testPairs, wordIndexer)
+    evaluate(model, data_loader)

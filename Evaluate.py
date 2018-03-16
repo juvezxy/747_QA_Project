@@ -3,12 +3,13 @@
 from config import *
 from COREQA import *
 
-def evaluate(model, testPairs, wordIndexer):
+def evaluate(model, data_loader):
     print('Evaluating ...')
     precisionTotal = 0
     recallTotal = 0
     F1Total = 0
-    testLength = len(testPairs)
+    testLength = len(data_loader.testing_data)
+    wordIndexer = data_loader.wordIndexer
     genderCorrect = 0
     genderPredicted = 0
     yearCorrect = 0
@@ -21,7 +22,9 @@ def evaluate(model, testPairs, wordIndexer):
     monthAppear = 0
     dayAppear = 0
     for i in range(testLength):
-        inputSeq, target = testPairs[i]
+        ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list = vars_from_data(
+            data_loader.testing_data[i])
+
         inputVar = Variable(torch.LongTensor(inputSeq).view(-1, 1))
         if use_cuda:
             inputVar = inputVar.cuda()
