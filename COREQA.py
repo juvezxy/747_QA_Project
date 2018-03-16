@@ -50,7 +50,8 @@ class COREQA(object):
         criterion = nn.NLLLoss()
 
         for iter in range(len(training_data)):
-            ques_var, answ_var, kb_var_list  = vars_from_data(training_data[iter])
+            ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list = vars_from_data(
+                training_data[iter])
             answ_length = answ_var.size()[0]
             self.optimizer.zero_grad()
 
@@ -88,9 +89,11 @@ class COREQA(object):
             if use_cuda:
                 decoder_input = decoder_input.cuda()
 
-            loss = 0
+            loss = 0.0
             
             for i in range(answ_length):
+                answer_mode = answer_modes_var_list[i]
+
                 word_embedded = self.embedding(decoder_input).view(1, 1, -1)
                 question_match_count = 0
                 weighted_question_encoding = Variable(torch.zeros(1, 1, 2 * self.state_size))
@@ -119,8 +122,9 @@ class COREQA(object):
                                                                                                kb_facts_embedded,
                                                                                                hist_kb)
 
-
-
+                # loss section
+                mode_loss = nn.CrossEntropyLoss()
+                loss += mode_loss(mode_predict, answer_mode)
 
 
                 decoder_input = answ_var[i]

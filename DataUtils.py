@@ -172,7 +172,7 @@ class DataLoader(object):
                             kb_locs.append(0)
                     answ4ques_locs.append([0]*len(question))
                     answ4kb_locs.append(kb_locs)
-                else if word in question: # mode 2: copy mode
+                elif word in question: # mode 2: copy mode
                     answer_modes.append(2)
                     ques_locs = list()
                     for qword in question:

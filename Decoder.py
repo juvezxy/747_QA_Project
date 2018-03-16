@@ -21,7 +21,6 @@ class Decoder(nn.Module):
         self.mode_state_size = self.embedding_size + self.state_size
         self.mode_mlp_w1 = nn.Linear(self.kb_atten_state_size, self.mode_size)
         self.mode_mlp_w2 = nn.Linear(self.mode_size, 3)
-        self.mode_mlp_softmax = nn.Softmax(dim=2)
 
         # KB attention network
         self.kb_atten_state_size = 2 * self.state_size + 2 * self.embedding_size + self.max_fact_num
@@ -36,7 +35,7 @@ class Decoder(nn.Module):
         ##################### Mode prediction ###############################
         mode_state = torch.cat((state, input_embedded), 2)
         mode_state = F.tanh(self.mode_mlp_w1(mode_state))
-        mode_predict = self.mode_mlp_softmax(self.mode_mlp_w2(mode_state))
+        mode_predict = self.mode_mlp_w2(mode_state)
         #####################################################################
 
         ###################### KB attention #################################
