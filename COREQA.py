@@ -99,8 +99,8 @@ class COREQA(object):
                 weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, 2 * self.embedding_size))
 
                 if (i > 0):
-                    ques_locs = answ4ques_locs_var[i-1][0][0]
-                    kb_locs = answ4kb_locs_var[i-1][0][0]
+                    ques_locs = answ4ques_locs_var_list[i-1][0][0]
+                    kb_locs = answ4kb_locs_var_list[i-1][0][0]
                     question_match_count = 0
                     kb_facts_match_count = 0
                     for ques_pos in len(ques_locs):
@@ -128,7 +128,7 @@ class COREQA(object):
 
                 # loss section
                 mode_loss = nn.CrossEntropyLoss()
-                loss += mode_loss(mode_predict, answer_mode)
+                loss += mode_loss(mode_predict, answer_mode.view(1,1))
 
 
                 decoder_input = answ_var[i]

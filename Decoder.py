@@ -20,7 +20,7 @@ class Decoder(nn.Module):
         # mode prediction network
         self.mode_state_size = self.embedding_size + self.state_size
         self.mode_mlp_w1 = nn.Linear(self.kb_atten_state_size, self.mode_size)
-        self.mode_mlp_w2 = nn.Linear(self.mode_size, 3)
+        self.mode_mlp_w2 = nn.Linear(self.mode_size, 2) # TODO: change to 3
 
         # KB attention network
         self.kb_atten_state_size = 2 * self.state_size + 2 * self.embedding_size + self.max_fact_num
