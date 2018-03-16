@@ -89,13 +89,8 @@ class COREQA(object):
                 decoder_input = decoder_input.cuda()
 
             loss = 0
-            decoder_input_embedded = Variable(torch.zeros(1, 1, 3 * self.embedding_size + 2 * self.state_size))
+            
             for i in range(answ_length):
-                decoder_output, decoder_hidden = self.decoder(decoder_input_embedded, decoder_hidden, question_embedded,
-                                                              kb_facts_embedded, hist_kb)
-                loss += criterion(decoder_output, answ_var[i])
-                decoder_input = answ_var[i]
-
                 word_embedded = self.embedding(decoder_input).view(1, 1, -1)
                 question_match_count = 0
                 weighted_question_encoding = Variable(torch.zeros(1, 1, 2 * self.state_size))
@@ -115,6 +110,14 @@ class COREQA(object):
                 if kb_facts_match_count > 0:
                     weighted_kb_facts_encoding /= kb_facts_match_count
                 decoder_input_embedded = torch.cat(word_embedded, weighted_question_encoding, weighted_kb_facts_encoding)
+
+                decoder_output, decoder_hidden = self.decoder(word_embedded, decoder_input_embedded, decoder_hidden, question_embedded,
+                                                              kb_facts_embedded, hist_kb)
+                
+                loss += criterion(decoder_output, answ_var[i])
+                decoder_input = answ_var[i]
+
+                
 
             #####################################################################
 

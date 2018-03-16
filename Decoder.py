@@ -28,8 +28,8 @@ class Decoder(nn.Module):
         self.kb_atten_mlp_w1 = nn.Linear(self.kb_atten_state_size, self.kb_attention_size)
         self.kb_atten_mlp_w2 = nn.Linear(self.kb_attention_size, 1)
 
-    def forward(self, input_embedded, imput_cat, hidden, question_embedded, kb_facts_embedded, hist_kb):
-        output = F.relu(imput_cat)
+    def forward(self, input_embedded, input_cat, hidden, question_embedded, kb_facts_embedded, hist_kb):
+        output = F.relu(input_cat)
         output, hidden = self.lstm(output, hidden)
 
         state = hidden[0]
