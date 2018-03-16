@@ -155,7 +155,7 @@ class DataLoader(object):
             answ4ques_locs, answ4kb_locs = [], []
             for word in answer:
                 # TODO: add copy mode
-                if word in fact_objs: # mode 1: retreive mode
+                if word in fact_objs: # mode 1: retrieve mode
                     answer_modes.append(1)
                     kb_locs = list()
                     for obj in fact_objs:
@@ -165,6 +165,16 @@ class DataLoader(object):
                             kb_locs.append(0)
                     answ4ques_locs.append(list())
                     answ4kb_locs.append(kb_locs)
+                else if word in question: # mode 2: copy mode
+                    answer_modes.append(2)
+                    ques_locs = list()
+                    for qword in question:
+                        if qword == word:
+                            ques_locs.append(1)
+                        else:
+                            ques_locs.append(0)
+                    answ4ques_locs.append(ques_locs)
+                    answ4kb_locs.append(list())
                 else: # mode 0: predict mode
                     answer_modes.append(0)
                     answ4ques_locs.append(list())
