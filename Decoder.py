@@ -24,7 +24,7 @@ class Decoder(nn.Module):
 
         # mode prediction network
         self.mode_state_size = self.embedding_size + self.state_size
-        self.mode_mlp_w1 = nn.Linear(self.kb_atten_state_size, self.mode_size)
+        self.mode_mlp_w1 = nn.Linear(self.mode_state_size, self.mode_size)
         self.mode_mlp_w2 = nn.Linear(self.mode_size, 2) # TODO: change to 3
 
     def forward(self, input_embedded, input_cat, hidden, question_embedded, kb_facts_embedded, hist_kb):

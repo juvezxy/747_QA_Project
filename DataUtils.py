@@ -9,7 +9,7 @@ def vars_from_data(data):
     ques_var = Variable(torch.LongTensor(question_ids).view(-1, 1))
     answ_var = Variable(torch.LongTensor(answer_ids).view(-1, 1))
     kb_var = [Variable(torch.LongTensor(kb_fact_id).view(-1, 1)) for kb_fact_id in kb_facts_ids]
-    answer_modes_var = [Variable(torch.LongTensor(answer_mode).view(1, 1, -1)) for answer_mode in answer_modes]
+    answer_modes_var = [Variable(torch.LongTensor([answer_mode]).view(-1)) for answer_mode in answer_modes]
     answ4ques_locs_var = [Variable(torch.LongTensor(answ4ques_loc).view(1, 1, -1)) for answ4ques_loc in answ4ques_locs]
     answ4kb_locs_var = [Variable(torch.LongTensor(answ4kb_loc).view(1, 1, -1)) for answ4kb_loc in answ4kb_locs]
 
@@ -161,7 +161,6 @@ class DataLoader(object):
             answer_modes = []
             answ4ques_locs, answ4kb_locs = [], []
             for word in answer:
-                # TODO: add copy mode
                 if word in fact_objs: # mode 1: retrieve mode
                     answer_modes.append(1)
                     kb_locs = list()

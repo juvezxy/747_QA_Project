@@ -88,6 +88,7 @@ class COREQA(object):
             hist_kb = Variable(torch.zeros(1, 1, self.max_fact_num))
             if use_cuda:
                 decoder_input = decoder_input.cuda()
+                hist_kb = hist_kb.cuda()
 
             loss = 0.0
             
@@ -97,6 +98,9 @@ class COREQA(object):
                 word_embedded = self.embedding(decoder_input).view(1, 1, -1)
                 weighted_question_encoding = Variable(torch.zeros(1, 1, 2 * self.state_size))
                 weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, 2 * self.embedding_size))
+                if use_cuda:
+                    weighted_question_encoding = weighted_question_encoding.cuda()
+                    weighted_kb_facts_encoding = weighted_kb_facts_encoding.cuda()
 
                 if (i > 0):
                     ques_locs = answ4ques_locs_var_list[i-1][0][0]
@@ -129,13 +133,14 @@ class COREQA(object):
                 # loss section
                 mode_loss = nn.CrossEntropyLoss()
                 # TODO: add weight for mini-batch
-                loss += mode_loss(mode_predict, answer_mode.view(1,1))
+                loss += mode_loss(mode_predict.view(1,-1), answer_mode)
+                print loss
 
                 mode_predict = nn.Softmax(dim=2)(mode_predict).view(2, 1)
                 common_mode_predict = mode_predict[0]
                 kb_mode_predict = mode_predict[1]
 
-                predicted_probs = torch.concat((common_predict * common_mode_predict, kb_atten_predict * kb_mode_predict), 2)
+                predicted_probs = torch.cat((common_predict * common_mode_predict, kb_atten_predict * kb_mode_predict), 2)
                 if (answer_mode == 0): # predict mode
                     target = answ_var[i]
                 else: # retrieve mode
