@@ -11,18 +11,29 @@ class COREQA(object):
         self.word_indexer = model_params["word_indexer"]
         self.embedding_size = model_params["embedding_size"]
         self.state_size = model_params["state_size"]
+        self.ques_attention_size = model_params["ques_attention_size"]
+        self.kb_attention_size = model_params["kb_attention_size"]
+        self.max_fact_num = model_params["max_fact_num"]
+
         self.learning_rate = model_params["learning_rate"]
+        self.L2_factor = model_params["L2_factor"]
         self.MAX_LENGTH = model_params["MAX_LENGTH"]
         self.has_trained = False
 
+        ################ Initialize graph components ########################
         self.embedding = nn.Embedding(self.word_indexer.wordCount, self.embedding_size)
         self.encoder = Encoder(self.word_indexer.wordCount, self.state_size, self.embedding)
         self.decoder = Decoder(self.word_indexer.wordCount, self.state_size, self.embedding)
-        self.optimizer = optim.Adam(list(self.encoder.parameters())+list(self.decoder.parameters()), lr=self.learning_rate)
 
         if use_cuda:
             self.encoder.cuda()
             self.decoder.cuda()
+        #####################################################################
+
+        self.optimizer = optim.Adam(list(self.encoder.parameters()) + list(self.decoder.parameters()),
+                                    lr=self.learning_rate, weight_decay=self.L2_factor)
+
+
 
 
     def fit(self, training_data):
@@ -45,47 +56,51 @@ class COREQA(object):
                 rel_embedded = self.embedding(rel_obj[0]).view(1, 1, -1)
                 obj_embedded = self.embedding(rel_obj[1]).view(1, 1, -1)
                 kb_facts_embedded.append(torch.cat((rel_embedded, obj_embedded), 2))
+            avg_kb_facts_embedded = kb_facts_embedded[-1]
 
-    
             #####################################################################
 
-            targetLength = answ_var.size()[0]
+            answ_length = answ_var.size()[0]
 
             # Build graph
             self.optimizer.zero_grad()
 
+            ######################### Encoding ###################################
+            self.encoder.hidden = self.encoder.init_hidden()
 
-            self.encoder.hidden = self.encoder.initHidden()
-            #for i in range(inputLength):
-            #    encoderOutput, encoderHidden = self.encoder(inputVar[i], encoderHidden)
-            encoderOutputs = self.encoder(ques_var)
+            encoder_outputs = self.encoder(ques_var)
             # pad encodeOutputs to MAX_LENGTH
-            encoderOutputs = encoderOutputs.view(len(encoderOutputs), -1)
-            padding = (0, 0, 0, self.MAX_LENGTH - len(encoderOutputs))
-            encoderOutputs = F.pad(encoderOutputs, padding)
-            encoderOutputs = Variable(encoderOutputs)
+            encoder_outputs = encoder_outputs.view(len(encoder_outputs), -1)
+            #padding = (0, 0, 0, self.MAX_LENGTH - len(encoderOutputs))
+            #encoderOutputs = F.pad(encoderOutputs, padding)
+            #encoderOutputs = Variable(encoderOutputs)
             if use_cuda:
-                encoderOutputs = encoderOutputs.cuda()
+                encoder_outputs = encoder_outputs.cuda()
 
-            decoderInput = Variable(torch.LongTensor([[SOS]]))
+            question_embedded = self.encoder.hidden[0].view(1, 1, -1)
+            cell_state = self.encoder.hidden[1].view(1, 1, -1)
+            #####################################################################
+
+            decoder_hidden = (question_embedded, cell_state)
+            decoder_input = Variable(torch.LongTensor([[SOS]]))
             if use_cuda:
-                decoderInput = decoderInput.cuda()
-            decoderHidden = self.encoder.hidden
+                decoder_input = decoder_input.cuda()
+
             loss = 0
 
-            for i in range(targetLength):
-                decoderOutput, decoderHidden = self.decoder(decoderInput, decoderHidden)
-                loss += criterion(decoderOutput, answ_var[i])
-                decoderInput = answ_var[i]
+            for i in range(answ_length):
+                decoder_output, decoder_hidden = self.decoder(decoder_input, decoder_hidden)
+                loss += criterion(decoder_output, answ_var[i])
+                decoder_input = answ_var[i]
 
 
 
 
             loss.backward()
 
-            self.encoderOptimizer.step()
-            self.decoderOptimizer.step()
-            loss =  loss.data[0] / targetLength
+            self.optimizer.step()
+
+            loss =  loss.data[0] / answ_length
 
             lossTotal += loss
             if (iter + 1) % 1000 == 0:
