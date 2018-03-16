@@ -73,7 +73,7 @@ class COREQA(object):
             #encoder_outputs = encoder_outputs.view(len(encoder_outputs), -1)
             #padding = (0, 0, 0, self.MAX_LENGTH - len(encoder_outputs))
             #encoder_outputs = F.pad(encoder_outputs, padding)
-            encoder_outputs = Variable(encoder_outputs)
+            #encoder_outputs = Variable(encoder_outputs)
             if use_cuda:
                 encoder_outputs = encoder_outputs.cuda()
 
