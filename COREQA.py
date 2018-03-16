@@ -88,13 +88,8 @@ class COREQA(object):
 
             loss = 0
             decoder_input_embedded = Variable(torch.zeros(1, 1, 3 * self.embedding_size + 2 * self.state_size))
-            for i in range(targetLength):
-                decoder_output, decoder_hidden = self.decoder(decoder_input_embedded, decoder_hidden)
-                loss += criterion(decoderOutput, answ_var[i])
-                decoder_input = answ_var[i]
-
             for i in range(answ_length):
-                decoder_output, decoder_hidden = self.decoder(decoder_input, decoder_hidden)
+                decoder_output, decoder_hidden = self.decoder(decoder_input_embedded, decoder_hidden)
                 loss += criterion(decoder_output, answ_var[i])
                 decoder_input = answ_var[i]
 
