@@ -8,7 +8,7 @@ from config import *
 
 if __name__ == '__main__':
     # Process Data
-    data_loader = DataLoader(toy_data_path)
+    data_loader = DataLoader(syn_data_path)
 
     # Init Model
     model_params = {}

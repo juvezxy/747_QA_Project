@@ -63,8 +63,8 @@ def evaluate(model, testing_data):
         entityNumber = int(re.findall('\d+', entity)[0])
         #predictedEntity = entIndex in predictedSeq
         predictedEntity = False
-        predictedMale = model.word_indexer.word2index['他'] in predictedId
-        predictedFemale = wordIndexer.word2index['她'] in predictedId
+        predictedMale = wordIndexer.word2index[u'他'] in predictedId
+        predictedFemale = wordIndexer.word2index[u'她'] in predictedId
         if predictedEntity or predictedMale or predictedFemale:
             genderPredicted += 1
         if predictedEntity or (predictedMale and entityNumber <= 40000) or (predictedFemale and entityNumber > 40000):
@@ -73,9 +73,9 @@ def evaluate(model, testing_data):
         yearMatch = yearPattern.search(target)
         monthMatch = monthPattern.search(target)
         dayMatch = dayPattern.search(target)
-        yearPredicted += model.word_indexer.word2index['年'] in predictedId
-        monthPredicted += model.word_indexer.word2index['月'] in predictedId
-        dayPredicted += model.word_indexer.word2index['日'] in predictedId or wordIndexer.word2index['号'] in predictedId
+        yearPredicted += model.word_indexer.word2index[u'年'] in predictedId
+        monthPredicted += model.word_indexer.word2index[u'月'] in predictedId
+        dayPredicted += model.word_indexer.word2index[u'日'] in predictedId or wordIndexer.word2index[u'号'] in predictedId
 
         if (yearMatch):
             yearAppear += 1
@@ -100,5 +100,4 @@ def evaluate(model, testing_data):
     print('Precision of day:', dayCorrect * 1.0 / dayPredicted)
     print('Precision:', (genderCorrect + yearCorrect + monthCorrect + dayCorrect) * 1.0 / (
     genderPredicted + yearPredicted + monthPredicted + dayPredicted))
-    print('Recall:', (genderCorrect + yearCorrect + monthCorrect + dayCorrect) * 1.0 / (
-    testLength + yearAppear + monthAppear + dayAppear))
+    #print('Recall:', (genderCorrect + yearCorrect + monthCorrect + dayCorrect) * 1.0 / (testLength + yearAppear + monthAppear + dayAppear))

@@ -257,7 +257,7 @@ class COREQA(object):
                     decoder_input = Variable(torch.LongTensor([[token]]))
                     weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, 2 * self.embedding_size))
             else:
-                kb_idx = token[0] - self.word_indexer.wordCount
+                kb_idx = token - self.word_indexer.wordCount
                 rel_obj = kb_var_list[kb_idx]
                 token = rel_obj.data[1]
                 decoded.append(token)
