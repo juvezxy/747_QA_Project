@@ -15,6 +15,7 @@ if __name__ == '__main__':
     model_params["word_indexer"] = data_loader.wordIndexer
     model_params["embedding_size"] = 300
     model_params["state_size"] = 512
+    model_params["mode_size"] = 200
     model_params["ques_attention_size"] = 200
     model_params["kb_attention_size"] = 200
     model_params["learning_rate"] = 0.01

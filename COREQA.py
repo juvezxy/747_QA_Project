@@ -11,6 +11,7 @@ class COREQA(object):
         self.word_indexer = model_params["word_indexer"]
         self.embedding_size = model_params["embedding_size"]
         self.state_size = model_params["state_size"]
+        self.mode_size = model_params["mode_size"]
         self.ques_attention_size = model_params["ques_attention_size"]
         self.kb_attention_size = model_params["kb_attention_size"]
         self.max_fact_num = model_params["max_fact_num"]
@@ -23,7 +24,9 @@ class COREQA(object):
         ################ Initialize graph components ########################
         self.embedding = nn.Embedding(self.word_indexer.wordCount, self.embedding_size)
         self.encoder = Encoder(self.word_indexer.wordCount, self.state_size, self.embedding)
-        self.decoder = Decoder(self.word_indexer.wordCount, self.state_size, self.embedding, self.kb_attention_size, self.max_fact_num)
+        self.decoder = Decoder(output_size=self.word_indexer.wordCount, state_size=self.state_size,
+                               embedding=self.embedding, mode_size=self.mode_size,
+                               kb_attention_size=self.kb_attention_size, max_fact_num=self.max_fact_num)
 
         if use_cuda:
             self.encoder.cuda()
