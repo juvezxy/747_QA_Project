@@ -95,23 +95,27 @@ class COREQA(object):
                 answer_mode = answer_modes_var_list[i]
 
                 word_embedded = self.embedding(decoder_input).view(1, 1, -1)
-                question_match_count = 0
                 weighted_question_encoding = Variable(torch.zeros(1, 1, 2 * self.state_size))
-                kb_facts_match_count = 0
                 weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, 2 * self.embedding_size))
-                for ques_pos in len(ques_var):
-                    if ques_var[ques_pos][0] == decoder_input:
-                        weighted_question_encoding += encoder_outputs[ques_pos][0]
-                        question_match_count += 1
-                if question_match_count > 0:
-                    weighted_question_encoding /= question_match_count
-                for kb_idx in len(kb_var_list):
-                    rel_obj = kb_var_list[kb_idx]
-                    if rel_obj[1] == decoder_input:
-                        weighted_kb_facts_encoding += kb_facts_embedded[kb_idx][0][0]
-                        kb_facts_match_count += 1
-                if kb_facts_match_count > 0:
-                    weighted_kb_facts_encoding /= kb_facts_match_count
+
+                if (i > 0):
+                    ques_locs = answ4ques_locs_var[i-1][0][0]
+                    kb_locs = answ4kb_locs_var[i-1][0][0]
+                    question_match_count = 0
+                    kb_facts_match_count = 0
+                    for ques_pos in len(ques_locs):
+                        if ques_locs[ques_pos]:
+                            weighted_question_encoding += encoder_outputs[ques_pos][0]
+                            question_match_count += 1
+                    if question_match_count > 0:
+                        weighted_question_encoding /= question_match_count
+                    for kb_idx in len(kb_locs):
+                        if kb_locs[kb_idx]:
+                            weighted_kb_facts_encoding += kb_facts_embedded[kb_idx][0][0]
+                            kb_facts_match_count += 1
+                    if kb_facts_match_count > 0:
+                        weighted_kb_facts_encoding /= kb_facts_match_count
+
                 decoder_input_embedded = torch.cat((word_embedded, weighted_question_encoding,
                                                    weighted_kb_facts_encoding, avg_kb_facts_embedded), 2)
 
