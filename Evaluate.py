@@ -5,6 +5,7 @@ from COREQA import *
 
 
 def evaluate(model, testing_data):
+    wordIndexer = model.word_indexer
     if not model.has_trained:
         print('Warning! Trying to evaluate without training!')
     print('Evaluating ...')
@@ -28,13 +29,18 @@ def evaluate(model, testing_data):
     for iter in range(test_length):
         ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts = vars_from_data(
             testing_data[iter])
+        inputSeq, target = testing_data[iter][0], testing_data[iter][1]
+        
+        print (target)
+        target = ''.join(target)
+        print (inputSeq)
         #inputSeq, target = testPairs[iter]
-        #inputVar = Variable(torch.LongTensor(inputSeq).view(-1, 1))
+        #ques_var = Variable(torch.LongTensor(inputSeq).view(-1, 1))
         #if use_cuda:
-        #    inputVar = inputVar.cuda()
-        #predictedSeq = model.predict(inputVar)
+        #    ques_var = ques_var.cuda()
+        #predictedSeq = model.predict(ques_var)
 
-        predictedSeq = model.predict(ques_var, kb_var_list, kb_facts)
+        predictedId, predictedToken = model.predict(ques_var, kb_var_list, kb_facts)
 
         '''precision = precision_score(targetSeq, predictedSeq, average='micro')
         recall = recall_score(targetSeq, predictedSeq, average='micro')
@@ -47,18 +53,20 @@ def evaluate(model, testing_data):
                 'F1:', F1Total / (i+1))
         '''
         if (iter + 1) % 1000 == 0:
-            predicted = [wordIndexer.index2word[index] for index in predictedSeq]
-            question = [wordIndexer.index2word[index] for index in inputSeq]
+            predicted = predictedToken
+            question = inputSeq
             print('Question:', question)
             print('Gold Answer:', target)
             print('Generated Answer:', predicted)
 
-        entIndex = inputSeq[0]  # index of the entity
-        entity = wordIndexer.index2word[entIndex]
+        #entIndex = inputSeq[0]  # index of the entity
+        #entity = wordIndexer.index2word[entIndex]
+        entity = inputSeq[0]
         entityNumber = int(re.findall('\d+', entity)[0])
-        predictedEntity = entIndex in predictedSeq
-        predictedMale = model.word_indexer.word2index['他'] in predictedSeq
-        predictedFemale = wordIndexer.word2index['她'] in predictedSeq
+        #predictedEntity = entIndex in predictedSeq
+        predictedEntity = False
+        predictedMale = model.word_indexer.word2index['他'] in predictedId
+        predictedFemale = wordIndexer.word2index['她'] in predictedId
         if predictedEntity or predictedMale or predictedFemale:
             genderPredicted += 1
         if predictedEntity or (predictedMale and entityNumber <= 40000) or (predictedFemale and entityNumber > 40000):
@@ -67,24 +75,24 @@ def evaluate(model, testing_data):
         yearMatch = yearPattern.search(target)
         monthMatch = monthPattern.search(target)
         dayMatch = dayPattern.search(target)
-        yearPredicted += model.word_indexer.word2index['年'] in predictedSeq
-        monthPredicted += model.word_indexer.word2index['月'] in predictedSeq
-        dayPredicted += model.word_indexer.word2index['日'] in predictedSeq or wordIndexer.word2index['号'] in predictedSeq
+        yearPredicted += model.word_indexer.word2index['年'] in predictedId
+        monthPredicted += model.word_indexer.word2index['月'] in predictedId
+        dayPredicted += model.word_indexer.word2index['日'] in predictedId or wordIndexer.word2index['号'] in predictedId
 
         if (yearMatch):
             yearAppear += 1
             year = yearMatch.group()[:-1]
-            if wordIndexer.word2index[year] in predictedSeq:
+            if year in predictedToken:
                 yearCorrect += 1
         if (monthMatch):
             monthAppear += 1
             month = monthMatch.group()[:-1]
-            if wordIndexer.word2index[month] in predictedSeq:
+            if month in predictedToken:
                 monthCorrect += 1
         if (dayMatch):
             dayAppear += 1
             day = dayMatch.group()[:-1]
-            if wordIndexer.word2index[day] in predictedSeq:
+            if day in predictedToken:
                 dayCorrect += 1
 
     # print ('Average precision:', precisionTotal / testLength, 'recall:', recallTotal / testLength, 'F1:', F1Total / testLength)

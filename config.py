@@ -27,6 +27,6 @@ EOS = 1
 PAD = 2
 UNK = 3
 
-toy_data_path = "toypairs"
+toy_data_path = "toy_data/"
 syn_data_path = "coreqa_data/syn_data/"
 cqa_data_path = "coreqa_data/cqa_data/cqa_triple_origina_v0"

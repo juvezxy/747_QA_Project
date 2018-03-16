@@ -128,7 +128,9 @@ class COREQA(object):
                 else: # retrieve mode
                     kb_locs = answ4kb_locs_var_list[i][0][0]
                     target = self.word_indexer.wordCount + kb_locs.data.tolist().index(1)
-                    target = Variable(torch.LongTensor([target]).view(-1)).cuda()
+                    target = Variable(torch.LongTensor([target]).view(-1))
+                    if use_cuda:
+                        target = target.cuda()
                 loss += XEnLoss(predicted_probs.view(1,-1), target)
                 #####################################################################
 
@@ -182,16 +184,15 @@ class COREQA(object):
             hist_kb = hist_kb.cuda()
 
         decoded = []
+        decoded_token = []
         weighted_question_encoding = Variable(torch.zeros(1, 1, 2 * self.state_size))
         weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, 2 * self.embedding_size))
         if use_cuda:
             weighted_question_encoding = weighted_question_encoding.cuda()
             weighted_kb_facts_encoding = weighted_kb_facts_encoding.cuda()
         for i in range(self.MAX_LENGTH):
-            answer_mode = answer_modes_var_list[i]
             word_embedded = self.embedding(decoder_input).view(1, 1, -1)
             
-
             '''
             if (i > 0):
                 ques_locs = answ4ques_locs_var_list[i-1][0][0]
@@ -239,45 +240,37 @@ class COREQA(object):
                                                                                            hist_kb)
 
             mode_predict = nn.Softmax(dim=2)(mode_predict).view(2, 1)
-            common_mode_predict = mode_predict.data[0]
-            kb_mode_predict = mode_predict.data[1]
-            if (common_mode_predict > kb_mode_predict):
-                topv, topi = common_predict.data.topk(1)
-                token = topi[0][0]
+            common_mode_predict = mode_predict[0]
+            kb_mode_predict = mode_predict[1]
+            predicted_probs = torch.cat((common_predict * common_mode_predict, kb_atten_predict * kb_mode_predict), 2)
+            topv, topi = predicted_probs.data.topk(1)
+            token = topi[0][0][0]
+            if token < self.word_indexer.wordCount:
                 if token == EOS:
                     decoded.append(EOS)
+                    decoded_token.append("_EOS")
                     break
                 else:
                     decoded.append(token)
+                    word = self.word_indexer.index2word[token]
+                    decoded_token.append(word)
                     decoder_input = Variable(torch.LongTensor([[token]]))
                     weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, 2 * self.embedding_size))
             else:
-                topv, topi = kb_atten_predict.data.topk(1)
-                kb_idx = topi[0][0]
+                kb_idx = token[0] - self.word_indexer.wordCount
                 rel_obj = kb_var_list[kb_idx]
                 token = rel_obj.data[1]
                 decoded.append(token)
+                kb_rel, kb_obj = kb_facts[kb_idx]
+                decoded_token.append(kb_obj)
                 decoder_input = Variable(torch.LongTensor([[token]]))
                 weighted_kb_facts_encoding = kb_facts_embedded[kb_idx][0][0]
 
             if use_cuda:
                 weighted_kb_facts_encoding = weighted_kb_facts_encoding.cuda()
-
+                decoder_input = decoder_input.cuda()
         
-
-        for i in range(self.MAX_LENGTH):
-            decoderOutput, decoderHidden = self.decoder(decoderInput, decoderHidden)
-            topv, topi = decoderOutput.data.topk(1)
-            token = topi[0][0]
-            if token == EOS:
-                decoded.append(EOS)
-                break
-            else:
-                decoded.append(token)
-            decoderInput = Variable(torch.LongTensor([[token]]))
-            if use_cuda:
-                decoderInput = decoderInput.cuda()
-        return decoded
+        return decoded, decoded_token
 
 
 

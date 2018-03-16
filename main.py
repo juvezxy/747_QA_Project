@@ -8,7 +8,7 @@ from config import *
 
 if __name__ == '__main__':
     # Process Data
-    data_loader = DataLoader(syn_data_path)
+    data_loader = DataLoader(toy_data_path)
 
     # Init Model
     model_params = {}
@@ -30,8 +30,6 @@ if __name__ == '__main__':
     model.fit(data_loader.training_data)
 
     # Evaluate
-<<<<<<< HEAD
+
     evaluate(model, data_loader.testing_data)
-=======
-    evaluate(model, data_loader)
->>>>>>> 2f738e20bfd08ee987e64438ddf41a79519ba94c
+
