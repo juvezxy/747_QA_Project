@@ -13,7 +13,7 @@ if __name__ == '__main__':
     # Init Model
     model_params = {}
     model_params["word_indexer"] = data_loader.wordIndexer
-    model_params["embedding_size"] = 300
+    model_params["embedding_size"] = 200
     model_params["state_size"] = 512
     model_params["mode_size"] = 200
     model_params["ques_attention_size"] = 200
@@ -21,7 +21,7 @@ if __name__ == '__main__':
     model_params["learning_rate"] = 0.01
     model_params["L2_factor"] = 0.0001
     model_params["max_fact_num"] = 4
-    model_params["MAX_LENGTH"] = 10
+    model_params["MAX_LENGTH"] = 20
 
     model = COREQA(model_params)
 

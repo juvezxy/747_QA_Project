@@ -135,6 +135,14 @@ class COREQA(object):
                 common_mode_predict = mode_predict[0]
                 kb_mode_predict = mode_predict[1]
 
+                predicted_probs = torch.concat((common_predict * common_mode_predict, kb_atten_predict * kb_mode_predict), 2)
+                if (answer_mode == 0): # predict mode
+                    target = answ_var[i]
+                else: # retrieve mode
+                    kb_locs = answ4kb_locs_var_list[i-1][0][0]
+                    target = self.word_indexer.wordCount + kb_locs.index(1)
+                loss += mode_loss(predicted_probs, target)
+
                 decoder_input = answ_var[i]
 
                 

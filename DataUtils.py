@@ -172,8 +172,8 @@ class DataLoader(object):
                             kb_locs.append(0)
                     answ4ques_locs.append([0]*len(question))
                     answ4kb_locs.append(kb_locs)
-                elif word in question: # mode 2: copy mode
-                    answer_modes.append(2)
+                elif word in question and word in self.kb_entities: # mode 2: copy mode
+                    answer_modes.append(0)
                     ques_locs = list()
                     for qword in question:
                         if qword == word:
