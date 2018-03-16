@@ -30,4 +30,8 @@ if __name__ == '__main__':
     model.fit(data_loader.training_data)
 
     # Evaluate
+<<<<<<< HEAD
     evaluate(model, data_loader.testing_data)
+=======
+    evaluate(model, data_loader)
+>>>>>>> 2f738e20bfd08ee987e64438ddf41a79519ba94c

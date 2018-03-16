@@ -3,6 +3,7 @@
 from config import *
 from COREQA import *
 
+
 def evaluate(model, testing_data):
     if not model.has_trained:
         print('Warning! Trying to evaluate without training!')
@@ -10,6 +11,7 @@ def evaluate(model, testing_data):
     precisionTotal = 0
     recallTotal = 0
     F1Total = 0
+
     test_length = len(testing_data)
     genderCorrect = 0
     genderPredicted = 0
@@ -22,6 +24,7 @@ def evaluate(model, testing_data):
     yearAppear = 0
     monthAppear = 0
     dayAppear = 0
+
     for iter in range(test_length):
         ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list = vars_from_data(
             testing_data[iter])
