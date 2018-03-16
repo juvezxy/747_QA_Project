@@ -31,9 +31,8 @@ def evaluate(model, testing_data):
             testing_data[iter])
         inputSeq, target = testing_data[iter][0], testing_data[iter][1]
         
-        print (target)
         target = ''.join(target)
-        print (inputSeq)
+       
         #inputSeq, target = testPairs[iter]
         #ques_var = Variable(torch.LongTensor(inputSeq).view(-1, 1))
         #if use_cuda:
@@ -41,7 +40,6 @@ def evaluate(model, testing_data):
         #predictedSeq = model.predict(ques_var)
 
         predictedId, predictedToken = model.predict(ques_var, kb_var_list, kb_facts)
-
         '''precision = precision_score(targetSeq, predictedSeq, average='micro')
         recall = recall_score(targetSeq, predictedSeq, average='micro')
         F1 = 2 * (precision * recall) / (precision + recall)
@@ -52,7 +50,7 @@ def evaluate(model, testing_data):
             print ('Test size so far:', i, 'precision:', precisionTotal / (i+1), 'recall:', recallTotal / (i+1),
                 'F1:', F1Total / (i+1))
         '''
-        if (iter + 1) % 1000 == 0:
+        if (iter + 1) % 100 == 0:
             predicted = predictedToken
             question = inputSeq
             print('Question:', question)
