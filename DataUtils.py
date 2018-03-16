@@ -9,11 +9,18 @@ def vars_from_data(data):
     ques_var = Variable(torch.LongTensor(question_ids).view(-1, 1))
     answ_var = Variable(torch.LongTensor(answer_ids).view(-1, 1))
     kb_var = [Variable(torch.LongTensor(kb_fact_id).view(-1, 1)) for kb_fact_id in kb_facts_ids]
+    answer_modes_var = [Variable(torch.LongTensor(answer_mode).view(1, 1, -1)) for answer_mode in answer_modes]
+    answ4ques_locs_var = [Variable(torch.LongTensor(answ4ques_loc).view(1, 1, -1)) for answ4ques_loc in answ4ques_locs]
+    answ4kb_locs_var = [Variable(torch.LongTensor(answ4kb_loc).view(1, 1, -1)) for answ4kb_loc in answ4kb_locs]
+
     if use_cuda:
         kb_var = [kb_fact_var.cuda() for kb_fact_var in kb_var]
-        return (ques_var.cuda(), answ_var.cuda(), kb_var)
+        answer_modes_var = [answer_mode_var.cuda() for answer_mode_var in answer_modes_var]
+        answ4ques_locs_var = [answ4ques_loc_var.cuda() for answ4ques_loc_var in answ4ques_locs_var]
+        answ4kb_locs_var = [answ4kb_loc_var.cuda() for answ4kb_loc_var in answ4kb_locs_var]
+        return (ques_var.cuda(), answ_var.cuda(), kb_var, answer_modes_var, answ4ques_locs_var, answ4kb_locs_var)
     else:
-        return (ques_var, answ_var, kb_var)
+        return (ques_var, answ_var, kb_var, answer_modes_var, answ4ques_locs_var, answ4kb_locs_var)
 
 def tokenizer(sentence):
     tokenized_list = []
@@ -163,7 +170,7 @@ class DataLoader(object):
                             kb_locs.append(1)
                         else:
                             kb_locs.append(0)
-                    answ4ques_locs.append(list())
+                    answ4ques_locs.append([0]*len(question))
                     answ4kb_locs.append(kb_locs)
                 else if word in question: # mode 2: copy mode
                     answer_modes.append(2)
@@ -174,10 +181,10 @@ class DataLoader(object):
                         else:
                             ques_locs.append(0)
                     answ4ques_locs.append(ques_locs)
-                    answ4kb_locs.append(list())
+                    answ4kb_locs.append([0]*self.max_fact_num)
                 else: # mode 0: predict mode
                     answer_modes.append(0)
-                    answ4ques_locs.append(list())
+                    answ4ques_locs.append([0]*len(question))
                     answ4kb_locs.append([0]*self.max_fact_num)
             if is_training_data:
                 self.training_data.append((question, answer, question_ids, answer_ids, kb_facts, kb_facts_ids,
