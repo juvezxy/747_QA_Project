@@ -88,6 +88,7 @@ class DataLoader(object):
         self.min_frq = min_frq
         self.max_vocab_size = max_vocab_size
         self.max_fact_num = 4
+        self.max_ques_len = 0
         self.load_data()
 
 
@@ -131,8 +132,11 @@ class DataLoader(object):
         with open(self.qa_data_path, 'r', encoding='utf-8') as inputFile:
             for line in inputFile:
                 question, answer = line.split()
+                self.max_ques_len = max(len(question), self.max_ques_len)
                 qaPairs.append((question, answer))
+        self.max_ques_len += 1
         print(len(qaPairs), 'pairs read.')
+        print('Maximum question length: ', self.max_ques_len)
         shuffle(qaPairs)
 
         split = int(0.9 * len(qaPairs))
@@ -171,7 +175,7 @@ class DataLoader(object):
                             kb_locs.append(1)
                         else:
                             kb_locs.append(0)
-                    answ4ques_locs.append([0]*len(question))
+                    answ4ques_locs.append([0]*self.max_ques_len)
                     answ4kb_locs.append(kb_locs)
                 elif word in question and word in self.kb_entities: # mode 2: copy mode
                     answer_modes.append(0)
@@ -181,11 +185,13 @@ class DataLoader(object):
                             ques_locs.append(1)
                         else:
                             ques_locs.append(0)
+                    for pad_to_max in range(self.max_ques_len - len(question)):
+                        ques_locs.append(0)
                     answ4ques_locs.append(ques_locs)
                     answ4kb_locs.append([0]*self.max_fact_num)
                 else: # mode 0: predict mode
                     answer_modes.append(0)
-                    answ4ques_locs.append([0]*len(question))
+                    answ4ques_locs.append([0]*self.max_ques_len)
                     answ4kb_locs.append([0]*self.max_fact_num)
             if is_training_data:
                 self.training_data.append((question, answer, question_ids, answer_ids, kb_facts, kb_facts_ids,
