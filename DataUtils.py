@@ -178,7 +178,7 @@ class DataLoader(object):
                 else: # mode 0: predict mode
                     answer_modes.append(0)
                     answ4ques_locs.append(list())
-                    answ4kb_locs.append(list())
+                    answ4kb_locs.append([0]*self.max_fact_num)
             if is_training_data:
                 self.training_data.append((question, answer, question_ids, answer_ids, kb_facts, kb_facts_ids,
                                            answer_modes, answ4ques_locs, answ4kb_locs))
