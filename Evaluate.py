@@ -26,7 +26,7 @@ def evaluate(model, testing_data):
     dayAppear = 0
 
     for iter in range(test_length):
-        ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list = vars_from_data(
+        ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts = vars_from_data(
             testing_data[iter])
         #inputSeq, target = testPairs[iter]
         #inputVar = Variable(torch.LongTensor(inputSeq).view(-1, 1))
@@ -34,7 +34,7 @@ def evaluate(model, testing_data):
         #    inputVar = inputVar.cuda()
         #predictedSeq = model.predict(inputVar)
 
-        predictedSeq = model.predict(ques_var, kb_var_list)
+        predictedSeq = model.predict(ques_var, kb_var_list, kb_facts)
 
         '''precision = precision_score(targetSeq, predictedSeq, average='micro')
         recall = recall_score(targetSeq, predictedSeq, average='micro')

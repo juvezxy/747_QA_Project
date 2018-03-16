@@ -18,9 +18,9 @@ def vars_from_data(data):
         answer_modes_var = [answer_mode_var.cuda() for answer_mode_var in answer_modes_var]
         answ4ques_locs_var = [answ4ques_loc_var.cuda() for answ4ques_loc_var in answ4ques_locs_var]
         answ4kb_locs_var = [answ4kb_loc_var.cuda() for answ4kb_loc_var in answ4kb_locs_var]
-        return (ques_var.cuda(), answ_var.cuda(), kb_var, answer_modes_var, answ4ques_locs_var, answ4kb_locs_var)
+        return (ques_var.cuda(), answ_var.cuda(), kb_var, answer_modes_var, answ4ques_locs_var, answ4kb_locs_var, kb_facts)
     else:
-        return (ques_var, answ_var, kb_var, answer_modes_var, answ4ques_locs_var, answ4kb_locs_var)
+        return (ques_var, answ_var, kb_var, answer_modes_var, answ4ques_locs_var, answ4kb_locs_var, kb_facts)
 
 def tokenizer(sentence):
     tokenized_list = []

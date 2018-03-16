@@ -45,7 +45,7 @@ class COREQA(object):
         lossTotal = 0.0
         XEnLoss = nn.CrossEntropyLoss()
         for iter in range(len(training_data)):
-            ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list = vars_from_data(
+            ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts = vars_from_data(
                 training_data[iter])
             answ_length = answ_var.size()[0]
             self.optimizer.zero_grad()
@@ -151,7 +151,7 @@ class COREQA(object):
         self.has_trained = True
         print('Training completed!')
 
-    def predict(self, ques_var, kb_var_list):
+    def predict(self, ques_var, kb_var_list, kb_facts):
         #inputLength = inputVar.size()[0]
 
         #################### Process KB facts ###############################
@@ -182,14 +182,15 @@ class COREQA(object):
             hist_kb = hist_kb.cuda()
 
         decoded = []
+        weighted_question_encoding = Variable(torch.zeros(1, 1, 2 * self.state_size))
+        weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, 2 * self.embedding_size))
+        if use_cuda:
+            weighted_question_encoding = weighted_question_encoding.cuda()
+            weighted_kb_facts_encoding = weighted_kb_facts_encoding.cuda()
         for i in range(self.MAX_LENGTH):
             answer_mode = answer_modes_var_list[i]
             word_embedded = self.embedding(decoder_input).view(1, 1, -1)
-            weighted_question_encoding = Variable(torch.zeros(1, 1, 2 * self.state_size))
-            weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, 2 * self.embedding_size))
-            if use_cuda:
-                weighted_question_encoding = weighted_question_encoding.cuda()
-                weighted_kb_facts_encoding = weighted_kb_facts_encoding.cuda()
+            
 
             '''
             if (i > 0):
@@ -210,6 +211,7 @@ class COREQA(object):
                 if kb_facts_match_count > 0:
                     weighted_kb_facts_encoding /= kb_facts_match_count
             '''
+            '''
             question_match_count = 0
             kb_facts_match_count = 0
             for ques_pos in len(ques_var):
@@ -225,7 +227,7 @@ class COREQA(object):
                     kb_facts_match_count += 1
             if kb_facts_match_count > 0:
                 weighted_kb_facts_encoding /= kb_facts_match_count
-
+            '''
             decoder_input_embedded = torch.cat((word_embedded, weighted_question_encoding,
                                                weighted_kb_facts_encoding, avg_kb_facts_embedded), 2)
 
@@ -236,7 +238,30 @@ class COREQA(object):
                                                                                            kb_facts_embedded,
                                                                                            hist_kb)
 
-            decoder_input = answ_var[i]
+            mode_predict = nn.Softmax(dim=2)(mode_predict).view(2, 1)
+            common_mode_predict = mode_predict.data[0]
+            kb_mode_predict = mode_predict.data[1]
+            if (common_mode_predict > kb_mode_predict):
+                topv, topi = common_predict.data.topk(1)
+                token = topi[0][0]
+                if token == EOS:
+                    decoded.append(EOS)
+                    break
+                else:
+                    decoded.append(token)
+                    decoder_input = Variable(torch.LongTensor([[token]]))
+                    weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, 2 * self.embedding_size))
+            else:
+                topv, topi = kb_atten_predict.data.topk(1)
+                kb_idx = topi[0][0]
+                rel_obj = kb_var_list[kb_idx]
+                token = rel_obj.data[1]
+                decoded.append(token)
+                decoder_input = Variable(torch.LongTensor([[token]]))
+                weighted_kb_facts_encoding = kb_facts_embedded[kb_idx][0][0]
+
+            if use_cuda:
+                weighted_kb_facts_encoding = weighted_kb_facts_encoding.cuda()
 
         
 
