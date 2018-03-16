@@ -107,14 +107,14 @@ class COREQA(object):
                     kb_locs = answ4kb_locs_var_list[i-1][0][0]
                     question_match_count = 0
                     kb_facts_match_count = 0
-                    for ques_pos in len(ques_locs):
-                        if ques_locs[ques_pos]:
+                    for ques_pos in range(len(ques_locs)):
+                        if ques_locs[ques_pos].data[0] == 1:
                             weighted_question_encoding += encoder_outputs[ques_pos][0]
                             question_match_count += 1
                     if question_match_count > 0:
                         weighted_question_encoding /= question_match_count
-                    for kb_idx in len(kb_locs):
-                        if kb_locs[kb_idx]:
+                    for kb_idx in range(len(kb_locs)):
+                        if kb_locs[kb_idx].data[0] == 1:
                             weighted_kb_facts_encoding += kb_facts_embedded[kb_idx][0][0]
                             kb_facts_match_count += 1
                     if kb_facts_match_count > 0:
@@ -144,8 +144,9 @@ class COREQA(object):
                 if (answer_mode.data[0] == 0): # predict mode
                     target = answ_var[i]
                 else: # retrieve mode
-                    kb_locs = answ4kb_locs_var_list[i-1][0][0]
-                    target = self.word_indexer.wordCount + kb_locs.index(1)
+                    kb_locs = answ4kb_locs_var_list[i][0][0]
+                    target = self.word_indexer.wordCount + kb_locs.data.tolist().index(1)
+                    target = Variable(torch.LongTensor([target]).view(-1))
                 loss += mode_loss(predicted_probs.view(1,-1), target)
 
                 decoder_input = answ_var[i]

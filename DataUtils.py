@@ -52,6 +52,7 @@ class WordIndexer:
                 indexList.append(PAD)
         # append EOS at end of each sentence
         indexList.append(EOS)
+        tokenized.append("_EOS")
         return tokenized, indexList
 
     def indexSentence(self, sentence, entity=list()):
@@ -64,6 +65,7 @@ class WordIndexer:
                 indexList.append(PAD)
         # append EOS at end of each sentence
         indexList.append(EOS)
+        tokenized.append("_EOS")
         return tokenized, indexList
 
     # index the word and return its correponding index
