@@ -70,10 +70,10 @@ class COREQA(object):
 
             encoder_outputs = self.encoder(ques_var)
             # pad encodeOutputs to MAX_LENGTH
-            encoder_outputs = encoder_outputs.view(len(encoder_outputs), -1)
-            #padding = (0, 0, 0, self.MAX_LENGTH - len(encoderOutputs))
-            #encoderOutputs = F.pad(encoderOutputs, padding)
-            #encoderOutputs = Variable(encoderOutputs)
+            #encoder_outputs = encoder_outputs.view(len(encoder_outputs), -1)
+            #padding = (0, 0, 0, self.MAX_LENGTH - len(encoder_outputs))
+            #encoder_outputs = F.pad(encoder_outputs, padding)
+            encoder_outputs = Variable(encoder_outputs)
             if use_cuda:
                 encoder_outputs = encoder_outputs.cuda()
 
@@ -87,14 +87,36 @@ class COREQA(object):
                 decoder_input = decoder_input.cuda()
 
             loss = 0
+            decoder_input_embedded = Variable(torch.zeros(1, 1, 3 * self.embedding_size + 2 * self.state_size))
+            for i in range(targetLength):
+                decoder_output, decoder_hidden = self.decoder(decoder_input_embedded, decoder_hidden)
+                loss += criterion(decoderOutput, answ_var[i])
+                decoder_input = answ_var[i]
 
             for i in range(answ_length):
                 decoder_output, decoder_hidden = self.decoder(decoder_input, decoder_hidden)
                 loss += criterion(decoder_output, answ_var[i])
                 decoder_input = answ_var[i]
 
-
-
+                word_embedded = self.embedding(decoder_input).view(1, 1, -1)
+                question_match_count = 0
+                weighted_question_encoding = Variable(torch.zeros(1, 1, 2 * self.state_size))
+                kb_facts_match_count = 0
+                weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, 2 * self.embedding_size))
+                for ques_pos in len(ques_var):
+                    if ques_var[ques_pos][0] == decoder_input:
+                        weighted_question_encoding += encoder_outputs[ques_pos][0]
+                        question_match_count += 1
+                if question_match_count > 0:
+                    weighted_question_encoding /= question_match_count
+                for kb_idx in len(kb_var_list):
+                    rel_obj = kb_var_list[kb_idx]
+                    if rel_obj[1] == decoder_input:
+                        weighted_kb_facts_encoding += kb_facts_embedded[kb_idx][0][0]
+                        kb_facts_match_count += 1
+                if kb_facts_match_count > 0:
+                    weighted_kb_facts_encoding /= kb_facts_match_count
+                decoder_input_embedded = torch.cat(word_embedded, weighted_question_encoding, weighted_kb_facts_encoding)
 
             loss.backward()
 
