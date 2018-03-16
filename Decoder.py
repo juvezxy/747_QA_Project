@@ -17,15 +17,15 @@ class Decoder(nn.Module):
         self.lstm = nn.LSTM(self.lstm_input_size, self.state_size)
         self.out = nn.Linear(self.state_size, self.output_size)
 
-        # mode prediction network
-        self.mode_state_size = self.embedding_size + self.state_size
-        self.mode_mlp_w1 = nn.Linear(self.kb_atten_state_size, self.mode_size)
-        self.mode_mlp_w2 = nn.Linear(self.mode_size, 2) # TODO: change to 3
-
         # KB attention network
         self.kb_atten_state_size = 2 * self.state_size + 2 * self.embedding_size + self.max_fact_num
         self.kb_atten_mlp_w1 = nn.Linear(self.kb_atten_state_size, self.kb_attention_size)
         self.kb_atten_mlp_w2 = nn.Linear(self.kb_attention_size, 1)
+
+        # mode prediction network
+        self.mode_state_size = self.embedding_size + self.state_size
+        self.mode_mlp_w1 = nn.Linear(self.kb_atten_state_size, self.mode_size)
+        self.mode_mlp_w2 = nn.Linear(self.mode_size, 2) # TODO: change to 3
 
     def forward(self, input_embedded, input_cat, hidden, question_embedded, kb_facts_embedded, hist_kb):
         #output = F.relu(input_cat)
