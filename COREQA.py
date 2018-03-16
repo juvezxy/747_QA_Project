@@ -128,8 +128,12 @@ class COREQA(object):
 
                 # loss section
                 mode_loss = nn.CrossEntropyLoss()
+                # TODO: add weight for mini-batch
                 loss += mode_loss(mode_predict, answer_mode.view(1,1))
 
+                mode_predict = nn.Softmax(dim=2)(mode_predict).view(2, 1)
+                common_mode_predict = mode_predict[0]
+                kb_mode_predict = mode_predict[1]
 
                 decoder_input = answ_var[i]
 
