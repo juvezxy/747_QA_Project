@@ -26,6 +26,8 @@ def evaluate(model, testing_data):
     monthAppear = 0
     dayAppear = 0
 
+    totalPrecision = 0
+    totalRecall = 0
     for iter in range(test_length):
         ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts = vars_from_data(
             testing_data[iter])
@@ -57,6 +59,10 @@ def evaluate(model, testing_data):
             print(repr(targetList).decode('unicode-escape'))
             print(repr(predicted).decode('unicode-escape'))
 
+        predictedCount = 0
+        appearCount = 0
+        correctCount = 0
+
         #entIndex = inputSeq[0]  # index of the entity
         #entity = wordIndexer.index2word[entIndex]
         entity = inputSeq[0]
@@ -67,45 +73,72 @@ def evaluate(model, testing_data):
         predictedFemale = wordIndexer.word2index[u'她'] in predictedId
         if predictedEntity or predictedMale or predictedFemale:
             genderPredicted += 1
+            predictedCount += 1
+        appearCount += 1
         if predictedEntity or (predictedMale and entityNumber <= 40000) or (predictedFemale and entityNumber > 40000):
             genderCorrect += 1
+            correctCount += 1
+
 
         yearMatch = yearPattern.search(target)
         monthMatch = monthPattern.search(target)
         dayMatch = dayPattern.search(target)
-        yearPredicted += model.word_indexer.word2index[u'年'] in predictedId
-        monthPredicted += model.word_indexer.word2index[u'月'] in predictedId
-        dayPredicted += model.word_indexer.word2index[u'日'] in predictedId or wordIndexer.word2index[u'号'] in predictedId
+        if (model.word_indexer.word2index[u'年'] in predictedId):
+            yearPredicted += 1
+            predictedCount += 1
+        if (model.word_indexer.word2index[u'月'] in predictedId):
+            monthPredicted += 1
+            predictedCount += 1
+        if (model.word_indexer.word2index[u'日'] in predictedId or wordIndexer.word2index[u'号'] in predictedId):
+            dayPredicted += 1
+            predictedCount += 1
 
         if (yearMatch):
             yearAppear += 1
+            appearCount += 1
             year = yearMatch.group()[:-1]
             if year in predictedToken:
                 yearCorrect += 1
+                correctCount += 1
         if (monthMatch):
             monthAppear += 1
+            appearCount += 1
             month = monthMatch.group()[:-1]
             if month in predictedToken:
                 monthCorrect += 1
+                correctCount += 1
         if (dayMatch):
             dayAppear += 1
+            appearCount += 1
             day = dayMatch.group()[:-1]
             if day in predictedToken:
                 dayCorrect += 1
+                correctCount += 1
 
+        if correctCount == predictedCount:
+            totalPrecision += 1
+        totalRecall += correctCount * 1.0 / appearCount
     # print ('Average precision:', precisionTotal / testLength, 'recall:', recallTotal / testLength, 'F1:', F1Total / testLength)
     if genderPredicted > 0:
         print('Precision of gender:', genderCorrect * 1.0 / genderPredicted)
-        print genderCorrect
+        #print (genderCorrect)
+    print('Recall of gender:', genderCorrect * 1.0 / testLength)
     if yearPredicted > 0:
         print('Precision of year:', yearCorrect * 1.0 / yearPredicted)
-        print yearCorrect
+        #print (yearCorrect)
+    if yearAppear > 0:
+        print('Recall of year:', yearCorrect * 1.0 / yearAppear)
     if monthPredicted > 0:
         print('Precision of month:', monthCorrect * 1.0 / monthPredicted)
-        print monthCorrect
+        #print (monthCorrect)
+    if monthAppear > 0:
+        print('Recall of month:', monthCorrect * 1.0 / monthAppear)
     if dayPredicted > 0:
         print('Precision of day:', dayCorrect * 1.0 / dayPredicted)
-        print dayCorrect
-    print('Precision:', (genderCorrect + yearCorrect + monthCorrect + dayCorrect) * 1.0 / (
-    genderPredicted + yearPredicted + monthPredicted + dayPredicted))
-    #print('Recall:', (genderCorrect + yearCorrect + monthCorrect + dayCorrect) * 1.0 / (testLength + yearAppear + monthAppear + dayAppear))
+        #print (dayCorrect)
+    if dayAppear > 0:
+        print('Recall of day:', dayCorrect * 1.0 / dayAppear)
+    print('Precision across 4 categories:', (genderCorrect + yearCorrect + monthCorrect + dayCorrect) * 1.0 / (genderPredicted + yearPredicted + monthPredicted + dayPredicted))
+    print('Recall across 4 categories:', (genderCorrect + yearCorrect + monthCorrect + dayCorrect) * 1.0 / (test_length + yearAppear + monthAppear + dayAppear))
+    print('Total precision:', totalPrecision * 1.0 / test_length)
+    print('Total recall:', totalRecall * 1.0 / test_length)
