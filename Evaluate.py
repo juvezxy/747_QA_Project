@@ -29,7 +29,7 @@ def evaluate(model, testing_data):
     totalPrecision = 0
     totalRecall = 0
     for iter in range(test_length):
-        ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts = vars_from_data(
+        ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts, ques = vars_from_data(
             testing_data[iter])
         inputSeq, target = testing_data[iter][0], testing_data[iter][1]
         targetList = target
@@ -41,7 +41,7 @@ def evaluate(model, testing_data):
         #    ques_var = ques_var.cuda()
         #predictedSeq = model.predict(ques_var)
 
-        predictedId, predictedToken = model.predict(ques_var, kb_var_list, kb_facts)
+        predictedId, predictedToken = model.predict(ques_var, kb_var_list, kb_facts, ques)
         '''precision = precision_score(targetSeq, predictedSeq, average='micro')
         recall = recall_score(targetSeq, predictedSeq, average='micro')
         F1 = 2 * (precision * recall) / (precision + recall)
@@ -122,7 +122,7 @@ def evaluate(model, testing_data):
     if genderPredicted > 0:
         print('Precision of gender:', genderCorrect * 1.0 / genderPredicted)
         #print (genderCorrect)
-    print('Recall of gender:', genderCorrect * 1.0 / testLength)
+    print('Recall of gender:', genderCorrect * 1.0 / test_length)
     if yearPredicted > 0:
         print('Precision of year:', yearCorrect * 1.0 / yearPredicted)
         #print (yearCorrect)
