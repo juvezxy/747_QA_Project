@@ -134,6 +134,7 @@ class DataLoader(object):
                 question, answer = line.split()
                 self.max_ques_len = max(len(tokenizer(question)), self.max_ques_len)
                 qaPairs.append((question, answer))
+        self.max_ques_len += 1
         print(len(qaPairs), 'pairs read.')
         print('Maximum question length: ', self.max_ques_len)
         shuffle(qaPairs)

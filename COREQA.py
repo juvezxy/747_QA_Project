@@ -120,17 +120,24 @@ class COREQA(object):
                 # TODO: add weight for mini-batch
                 loss += self.mode_loss_rate * XEnLoss(mode_predict.view(1,-1), answer_mode)
 
-                mode_predict = nn.Softmax(dim=2)(mode_predict).view(2, 1)
+                mode_predict = nn.Softmax(dim=2)(mode_predict).view(3, 1)
                 common_mode_predict = mode_predict[0]
                 kb_mode_predict = mode_predict[1]
                 ques_mode_predict = mode_predict[2]
 
-                predicted_probs = torch.cat((common_predict * common_mode_predict, kb_atten_predict * kb_mode_predict), 2)
+                predicted_probs = torch.cat((common_predict * common_mode_predict, kb_atten_predict * kb_mode_predict,
+                                             ques_atten_predict * ques_mode_predict), 2)
                 if (answer_mode.data[0] == 0): # predict mode
                     target = answ_var[i]
-                else: # retrieve mode
+                elif (answer_mode.data[0] == 1): # retrieve mode
                     kb_locs = answ4kb_locs_var_list[i][0][0]
                     target = self.word_indexer.wordCount + kb_locs.data.tolist().index(1)
+                    target = Variable(torch.LongTensor([target]).view(-1))
+                    if use_cuda:
+                        target = target.cuda()
+                else: # copy mode
+                    ques_locs = answ4ques_locs_var_list[i][0][0]
+                    target = self.word_indexer.wordCount + self.max_fact_num + ques_locs.data.tolist().index(1)
                     target = Variable(torch.LongTensor([target]).view(-1))
                     if use_cuda:
                         target = target.cuda()
