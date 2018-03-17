@@ -30,7 +30,7 @@ def evaluate(model, testing_data):
         ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts = vars_from_data(
             testing_data[iter])
         inputSeq, target = testing_data[iter][0], testing_data[iter][1]
-        
+        targetList = target
         target = ''.join(target)
        
         #inputSeq, target = testPairs[iter]
@@ -50,12 +50,12 @@ def evaluate(model, testing_data):
             print ('Test size so far:', i, 'precision:', precisionTotal / (i+1), 'recall:', recallTotal / (i+1),
                 'F1:', F1Total / (i+1))
         '''
-        if (iter + 1) % 100 == 0:
+        if (iter + 1) % 1000 == 0:
             predicted = predictedToken
             question = inputSeq
-            print('Question:', question)
-            print('Gold Answer:', target)
-            print('Generated Answer:', predicted)
+            print(repr(question).decode('unicode-escape'))
+            print(repr(targetList).decode('unicode-escape'))
+            print(repr(predicted).decode('unicode-escape'))
 
         #entIndex = inputSeq[0]  # index of the entity
         #entity = wordIndexer.index2word[entIndex]
@@ -94,10 +94,18 @@ def evaluate(model, testing_data):
                 dayCorrect += 1
 
     # print ('Average precision:', precisionTotal / testLength, 'recall:', recallTotal / testLength, 'F1:', F1Total / testLength)
-    print('Precision of gender:', genderCorrect * 1.0 / genderPredicted)
-    print('Precision of year:', yearCorrect * 1.0 / yearPredicted)
-    print('Precision of month:', monthCorrect * 1.0 / monthPredicted)
-    print('Precision of day:', dayCorrect * 1.0 / dayPredicted)
+    if genderPredicted > 0:
+        print('Precision of gender:', genderCorrect * 1.0 / genderPredicted)
+        print genderCorrect
+    if yearPredicted > 0:
+        print('Precision of year:', yearCorrect * 1.0 / yearPredicted)
+        print yearCorrect
+    if monthPredicted > 0:
+        print('Precision of month:', monthCorrect * 1.0 / monthPredicted)
+        print monthCorrect
+    if dayPredicted > 0:
+        print('Precision of day:', dayCorrect * 1.0 / dayPredicted)
+        print dayCorrect
     print('Precision:', (genderCorrect + yearCorrect + monthCorrect + dayCorrect) * 1.0 / (
     genderPredicted + yearPredicted + monthPredicted + dayPredicted))
     #print('Recall:', (genderCorrect + yearCorrect + monthCorrect + dayCorrect) * 1.0 / (testLength + yearAppear + monthAppear + dayAppear))

@@ -99,7 +99,7 @@ class COREQA(object):
                         weighted_question_encoding /= question_match_count
                     for kb_idx in range(len(kb_locs)):
                         if kb_locs[kb_idx].data[0] == 1:
-                            weighted_kb_facts_encoding += kb_facts_embedded[kb_idx][0][0]
+                            weighted_kb_facts_encoding += kb_facts_embedded[kb_idx]
                             kb_facts_match_count += 1
                     if kb_facts_match_count > 0:
                         weighted_kb_facts_encoding /= kb_facts_match_count
@@ -183,7 +183,7 @@ class COREQA(object):
             decoder_input = decoder_input.cuda()
             hist_kb = hist_kb.cuda()
 
-        decoded = []
+        decoded_id = []
         decoded_token = []
         weighted_question_encoding = Variable(torch.zeros(1, 1, 2 * self.state_size))
         weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, 2 * self.embedding_size))
@@ -192,43 +192,6 @@ class COREQA(object):
             weighted_kb_facts_encoding = weighted_kb_facts_encoding.cuda()
         for i in range(self.MAX_LENGTH):
             word_embedded = self.embedding(decoder_input).view(1, 1, -1)
-            
-            '''
-            if (i > 0):
-                ques_locs = answ4ques_locs_var_list[i-1][0][0]
-                kb_locs = answ4kb_locs_var_list[i-1][0][0]
-                question_match_count = 0
-                kb_facts_match_count = 0
-                for ques_pos in range(len(ques_locs)):
-                    if ques_locs[ques_pos].data[0] == 1:
-                        weighted_question_encoding += encoder_outputs[ques_pos][0]
-                        question_match_count += 1
-                if question_match_count > 0:
-                    weighted_question_encoding /= question_match_count
-                for kb_idx in range(len(kb_locs)):
-                    if kb_locs[kb_idx].data[0] == 1:
-                        weighted_kb_facts_encoding += kb_facts_embedded[kb_idx][0][0]
-                        kb_facts_match_count += 1
-                if kb_facts_match_count > 0:
-                    weighted_kb_facts_encoding /= kb_facts_match_count
-            '''
-            '''
-            question_match_count = 0
-            kb_facts_match_count = 0
-            for ques_pos in len(ques_var):
-                if ques_var.data[ques_pos][0] == decoder_input:
-                    weighted_question_encoding += encoder_outputs[ques_pos][0]
-                    question_match_count += 1
-            if question_match_count > 0:
-                weighted_question_encoding /= question_match_count
-            for kb_idx in len(kb_var_list):
-                rel_obj = kb_var_list[kb_idx]
-                if rel_obj.data[1] == decoder_input:
-                    weighted_kb_facts_encoding += kb_facts_embedded[kb_idx][0][0]
-                    kb_facts_match_count += 1
-            if kb_facts_match_count > 0:
-                weighted_kb_facts_encoding /= kb_facts_match_count
-            '''
             decoder_input_embedded = torch.cat((word_embedded, weighted_question_encoding,
                                                weighted_kb_facts_encoding, avg_kb_facts_embedded), 2)
 
@@ -247,11 +210,11 @@ class COREQA(object):
             token = topi[0][0][0]
             if token < self.word_indexer.wordCount:
                 if token == EOS:
-                    decoded.append(EOS)
+                    decoded_id.append(EOS)
                     decoded_token.append("_EOS")
                     break
                 else:
-                    decoded.append(token)
+                    decoded_id.append(token)
                     word = self.word_indexer.index2word[token]
                     decoded_token.append(word)
                     decoder_input = Variable(torch.LongTensor([[token]]))
@@ -259,25 +222,18 @@ class COREQA(object):
             else:
                 kb_idx = token - self.word_indexer.wordCount
                 rel_obj = kb_var_list[kb_idx]
-                token = rel_obj.data[1]
-                decoded.append(token)
+                token = rel_obj[1]
+                decoded_id.append(token.data[0])
                 kb_sub, kb_rel, kb_obj = kb_facts[kb_idx]
                 decoded_token.append(kb_obj)
-                decoder_input = Variable(torch.LongTensor([[token]]))
-                weighted_kb_facts_encoding = kb_facts_embedded[kb_idx][0][0]
+                decoder_input = token
+                weighted_kb_facts_encoding = kb_facts_embedded[kb_idx]
 
             if use_cuda:
                 weighted_kb_facts_encoding = weighted_kb_facts_encoding.cuda()
                 decoder_input = decoder_input.cuda()
         
-        return decoded, decoded_token
-
-
-
-
-
-
-
+        return decoded_id, decoded_token
 
 
 
