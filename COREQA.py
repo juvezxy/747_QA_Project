@@ -244,7 +244,7 @@ class COREQA(object):
                 word_idx = ques_var[copy_idx]
                 decoded_id.append(word_idx.data[0])
                 word = self.word_indexer.index2word[word_idx.data[0]]
-                decoder_token.append(word)
+                decoded_token.append(word)
                 decoder_input = word_idx
                 weighted_question_encoding = encoder_outputs[copy_idx]
             if use_cuda:
