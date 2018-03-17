@@ -46,8 +46,7 @@ class COREQA(object):
         startTime = time.time()
         lossTotal = 0.0
         XEnLoss = nn.CrossEntropyLoss()
-        #for iter in range(len(training_data)):
-        for iter in range(10000):
+        for iter in range(len(training_data)):
             ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts, ques = vars_from_data(
                 training_data[iter])
             answ_length = answ_var.size()[0]

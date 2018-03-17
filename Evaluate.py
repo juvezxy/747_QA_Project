@@ -68,7 +68,7 @@ def evaluate(model, testing_data):
         entity = inputSeq[0]
         entityNumber = int(re.findall('\d+', entity)[0])
         #predictedEntity = entIndex in predictedSeq
-        predictedEntity = False
+        predictedEntity = ques[0] in predictedToken
         predictedMale = wordIndexer.word2index[u'他'] in predictedId
         predictedFemale = wordIndexer.word2index[u'她'] in predictedId
         if predictedEntity or predictedMale or predictedFemale:
