@@ -19,8 +19,8 @@ if __name__ == '__main__':
     model_params["mode_size"] = 200
     model_params["ques_attention_size"] = 200
     model_params["kb_attention_size"] = 200
-    model_params["learning_rate"] = 0.001
-    model_params["mode_loss_rate"] = 0.5
+    model_params["learning_rate"] = 0.005
+    model_params["mode_loss_rate"] = 1.0
     model_params["L2_factor"] = 0
     model_params["max_fact_num"] = data_loader.max_fact_num
     model_params["max_ques_len"] = data_loader.max_ques_len
