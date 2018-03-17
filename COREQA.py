@@ -243,7 +243,7 @@ class COREQA(object):
                 copy_idx = idx - self.word_indexer.wordCount - self.max_fact_num
                 word_idx = ques_var[copy_idx]
                 decoded_id.append(word_idx.data[0])
-                word = self.word_indexer.index2word[word_idx.data[0]]
+                word = ques[copy_idx]
                 decoded_token.append(word)
                 decoder_input = word_idx
                 weighted_question_encoding = encoder_outputs[copy_idx]
