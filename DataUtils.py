@@ -38,8 +38,8 @@ class WordIndexer:
     def __init__(self):
         self.word2index = {}
         self.word2count = {}
-        self.index2word = {0: "_SOS", 1: "_EOS", 2: "_PAD", 3: "_UNK"}
-        self.wordCount = 4
+        self.index2word = {0: "_SOS", 1: "_EOS", 2: "_PAD", 3: "_UNK", 4: "_FIL"}
+        self.wordCount = 5
 
     # index each word in the sentence and return a list of indices
     def addSentence(self, sentence, entity=list()):
@@ -132,7 +132,7 @@ class DataLoader(object):
         with open(self.qa_data_path, 'r', encoding='utf-8') as inputFile:
             for line in inputFile:
                 question, answer = line.split()
-                self.max_ques_len = max(len(question), self.max_ques_len)
+                self.max_ques_len = max(len(tokenizer(question)), self.max_ques_len)
                 qaPairs.append((question, answer))
         self.max_ques_len += 1
         print(len(qaPairs), 'pairs read.')
@@ -150,6 +150,8 @@ class DataLoader(object):
             else:
                 question, question_ids = self.wordIndexer.indexSentence(question, self.kb_entities)
                 answer, answer_ids = self.wordIndexer.indexSentence(answer, self.kb_entities)
+            for pad_to_max in range(self.max_ques_len - len(question_ids)):
+                question_ids.append(FIL)
 
             kb_facts,kb_facts_ids = [], []
             for word in question:
@@ -159,7 +161,7 @@ class DataLoader(object):
                 kb_facts = kb_facts[:self.max_fact_num]
             else:
                 for pad_index in range(self.max_fact_num - len(kb_facts)):
-                    kb_facts.append(("_PAD", "_PAD", "_PAD"))
+                    kb_facts.append(("_FIL", "_FIL", "_FIL"))
             for (sub, rel, obj) in kb_facts:
                 kb_facts_ids.append((self.wordIndexer.word2index.get(rel, PAD),self.wordIndexer.word2index.get(obj, PAD)))
             fact_objs = [x[2] for x in kb_facts]
@@ -178,7 +180,7 @@ class DataLoader(object):
                     answ4ques_locs.append([0]*self.max_ques_len)
                     answ4kb_locs.append(kb_locs)
                 elif word in question and word in self.kb_entities: # mode 2: copy mode
-                    answer_modes.append(0)
+                    answer_modes.append(2)
                     ques_locs = list()
                     for qword in question:
                         if qword == word:

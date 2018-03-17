@@ -26,6 +26,7 @@ SOS = 0
 EOS = 1
 PAD = 2
 UNK = 3
+FIL = 4
 
 toy_data_path = "toy_data/"
 syn_data_path = "coreqa_data/syn_data/"
