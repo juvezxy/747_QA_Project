@@ -97,21 +97,21 @@ def evaluate(model, testing_data):
             yearAppear += 1
             appearCount += 1
             year = yearMatch.group()[:-1]
-            if year in predictedToken:
+            if year in predictedToken and predictedToken[predictedToken.index(year)+1] == u'年':
                 yearCorrect += 1
                 correctCount += 1
         if (monthMatch):
             monthAppear += 1
             appearCount += 1
             month = monthMatch.group()[:-1]
-            if month in predictedToken:
+            if month in predictedToken and predictedToken[predictedToken.index(month)+1] == u'月':
                 monthCorrect += 1
                 correctCount += 1
         if (dayMatch):
             dayAppear += 1
             appearCount += 1
             day = dayMatch.group()[:-1]
-            if day in predictedToken:
+            if day in predictedToken and predictedToken[predictedToken.index(day)+1] in [u'日', u'号']:
                 dayCorrect += 1
                 correctCount += 1
 
