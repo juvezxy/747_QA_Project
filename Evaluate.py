@@ -5,7 +5,6 @@ from COREQA import *
 
 
 def evaluate(model, testing_data):
-    wordIndexer = model.word_indexer
     if not model.has_trained:
         print('Warning! Trying to evaluate without training!')
     print('Evaluating ...')
@@ -29,11 +28,9 @@ def evaluate(model, testing_data):
     totalPrecision = 0
     totalRecall = 0
     for iter in range(test_length):
-        ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts, ques = vars_from_data(
+        ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts, ques, answ = vars_from_data(
             testing_data[iter])
-        inputSeq, target = testing_data[iter][0], testing_data[iter][1]
-        targetList = target
-        target = ''.join(target)
+        target = ''.join(answ)
        
         #inputSeq, target = testPairs[iter]
         #ques_var = Variable(torch.LongTensor(inputSeq).view(-1, 1))
@@ -42,6 +39,7 @@ def evaluate(model, testing_data):
         #predictedSeq = model.predict(ques_var)
 
         predictedId, predictedToken = model.predict(ques_var, kb_var_list, kb_facts, ques)
+        predictedSent = ''.join(predictedToken)
         '''precision = precision_score(targetSeq, predictedSeq, average='micro')
         recall = recall_score(targetSeq, predictedSeq, average='micro')
         F1 = 2 * (precision * recall) / (precision + recall)
@@ -53,11 +51,9 @@ def evaluate(model, testing_data):
                 'F1:', F1Total / (i+1))
         '''
         if (iter + 1) % 1000 == 0:
-            predicted = predictedToken
-            question = inputSeq
-            print(repr(question).decode('unicode-escape'))
-            print(repr(targetList).decode('unicode-escape'))
-            print(repr(predicted).decode('unicode-escape'))
+            print(repr(ques).decode('unicode-escape'))
+            print(repr(answ).decode('unicode-escape'))
+            print(repr(predictedToken).decode('unicode-escape'))
 
         predictedCount = 0
         appearCount = 0
@@ -65,12 +61,12 @@ def evaluate(model, testing_data):
 
         #entIndex = inputSeq[0]  # index of the entity
         #entity = wordIndexer.index2word[entIndex]
-        entity = inputSeq[0]
+        entity = ques[0]
         entityNumber = int(re.findall('\d+', entity)[0])
         #predictedEntity = entIndex in predictedSeq
         predictedEntity = ques[0] in predictedToken
-        predictedMale = wordIndexer.word2index[u'他'] in predictedId
-        predictedFemale = wordIndexer.word2index[u'她'] in predictedId
+        predictedMale = u'他' in predictedToken
+        predictedFemale = u'她' in predictedToken
         if predictedEntity or predictedMale or predictedFemale:
             genderPredicted += 1
             predictedCount += 1
@@ -80,38 +76,47 @@ def evaluate(model, testing_data):
             correctCount += 1
 
 
-        yearMatch = yearPattern.search(target)
-        monthMatch = monthPattern.search(target)
-        dayMatch = dayPattern.search(target)
-        if (model.word_indexer.word2index[u'年'] in predictedId):
+        yearMatchTarget = yearPattern.search(target)
+        monthMatchTarget = monthPattern.search(target)
+        dayMatchTarget = dayPattern.search(target)
+
+        yearMatchPredicted = yearPattern.search(predictedSent)
+        monthMatchPredicted = monthPattern.search(predictedSent)
+        dayMatchPredicted = dayPattern.search(predictedSent)
+
+        if (yearMatchPredicted):
             yearPredicted += 1
             predictedCount += 1
-        if (model.word_indexer.word2index[u'月'] in predictedId):
-            monthPredicted += 1
-            predictedCount += 1
-        if (model.word_indexer.word2index[u'日'] in predictedId or wordIndexer.word2index[u'号'] in predictedId):
-            dayPredicted += 1
-            predictedCount += 1
-
-        if (yearMatch):
+            yearPredict = yearMatchPredicted.group()[:-1]
+        if (yearMatchTarget):
             yearAppear += 1
             appearCount += 1
-            year = yearMatch.group()[:-1]
-            if year in predictedToken and predictedToken[predictedToken.index(year)+1] == u'年':
+            year = yearMatchTarget.group()[:-1]
+            if yearMatchPredicted and year == yearPredict:
                 yearCorrect += 1
                 correctCount += 1
-        if (monthMatch):
+
+        if (monthMatchPredicted):
+            monthPredicted += 1
+            predictedCount += 1
+            monthPredict = monthMatchPredicted.group()[:-1]
+        if (monthMatchTarget):
             monthAppear += 1
             appearCount += 1
-            month = monthMatch.group()[:-1]
-            if month in predictedToken and predictedToken[predictedToken.index(month)+1] == u'月':
+            month = monthMatchTarget.group()[:-1]
+            if monthMatchPredicted and month == monthPredict:
                 monthCorrect += 1
                 correctCount += 1
-        if (dayMatch):
+
+        if (dayMatchPredicted):
+            dayPredicted += 1
+            predictedCount += 1
+            dayPredict = dayMatchPredicted.group()[:-1]
+        if (dayMatchTarget):
             dayAppear += 1
             appearCount += 1
-            day = dayMatch.group()[:-1]
-            if day in predictedToken and predictedToken[predictedToken.index(day)+1] in [u'日', u'号']:
+            day = dayMatchTarget.group()[:-1]
+            if dayMatchPredicted and day == dayPredict:
                 dayCorrect += 1
                 correctCount += 1
 
