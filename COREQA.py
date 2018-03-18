@@ -20,6 +20,9 @@ class COREQA(object):
         self.learning_rate = model_params["learning_rate"]
         self.mode_loss_rate = model_params["mode_loss_rate"]
         self.L2_factor = model_params["L2_factor"]
+        self.batch_size = model_params["batch_size"]
+        self.epoch_size = model_params["epoch_size"]
+        self.instance_weight = 1.0 / self.batch_size
         self.MAX_LENGTH = model_params["MAX_LENGTH"]
         self.has_trained = False
 
@@ -45,119 +48,122 @@ class COREQA(object):
         print('Start training ...')
         startTime = time.time()
         lossTotal = 0.0
+        self.optimizer.zero_grad()
         XEnLoss = nn.CrossEntropyLoss()
-        for iter in range(len(training_data)):
-            ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts, ques, answ = vars_from_data(
-                training_data[iter])
-            answ_length = answ_var.size()[0]
-            self.optimizer.zero_grad()
+        for epoch in range(self.epoch_size):
+            for iter in range(len(training_data)):
+                ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts, ques, answ = vars_from_data(
+                    training_data[iter])
+                answ_length = answ_var.size()[0]
 
-            #################### Process KB facts ###############################
-            kb_facts_embedded = []
-            for rel_obj in kb_var_list:
-                rel_embedded = self.embedding(rel_obj[0]).view(1, 1, -1)
-                obj_embedded = self.embedding(rel_obj[1]).view(1, 1, -1)
-                kb_facts_embedded.append(torch.cat((rel_embedded, obj_embedded), 2))
-            avg_kb_facts_embedded = kb_facts_embedded[-1]
-            #####################################################################
-
-
-            ######################### Encoding ##################################
-            self.encoder.hidden = self.encoder.init_hidden()
-            encoder_outputs = self.encoder(ques_var)
-            question_embedded = self.encoder.hidden[0].view(1, 1, -1)
-            cell_state = self.encoder.hidden[1].view(1, 1, -1)
-            #####################################################################
-
-
-            ######################### Decoding ###################################
-            decoder_hidden = (question_embedded, cell_state)
-            decoder_input = Variable(torch.LongTensor([[SOS]]))
-            hist_ques = Variable(torch.zeros(1, 1, self.max_ques_len))
-            hist_kb = Variable(torch.zeros(1, 1, self.max_fact_num))
-            if use_cuda:
-                decoder_input = decoder_input.cuda()
-                hist_kb = hist_kb.cuda()
-                hist_ques = hist_ques.cuda()
-
-            loss = 0.0
-            for i in range(answ_length):
-                answer_mode = answer_modes_var_list[i]
-                word_embedded = self.embedding(decoder_input).view(1, 1, -1)
-                weighted_question_encoding = Variable(torch.zeros(1, 1, 2 * self.state_size))
-                weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, 2 * self.embedding_size))
-                if use_cuda:
-                    weighted_question_encoding = weighted_question_encoding.cuda()
-                    weighted_kb_facts_encoding = weighted_kb_facts_encoding.cuda()
-
-                if (i > 0):
-                    ques_locs = answ4ques_locs_var_list[i-1][0][0]
-                    kb_locs = answ4kb_locs_var_list[i-1][0][0]
-                    question_match_count = 0
-                    kb_facts_match_count = 0
-                    for ques_pos in range(len(ques_locs)):
-                        if ques_locs[ques_pos].data[0] == 1:
-                            weighted_question_encoding += encoder_outputs[ques_pos][0].view(1, 1, -1)
-                            question_match_count += 1
-                    if question_match_count > 0:
-                        weighted_question_encoding /= question_match_count
-                    for kb_idx in range(len(kb_locs)):
-                        if kb_locs[kb_idx].data[0] == 1:
-                            weighted_kb_facts_encoding += kb_facts_embedded[kb_idx]
-                            kb_facts_match_count += 1
-                    if kb_facts_match_count > 0:
-                        weighted_kb_facts_encoding /= kb_facts_match_count
-
-                decoder_input_embedded = torch.cat((word_embedded, weighted_question_encoding,
-                                                   weighted_kb_facts_encoding, avg_kb_facts_embedded), 2)
-
-                common_predict, decoder_hidden, mode_predict, kb_atten_predict, hist_kb, ques_atten_predict, hist_ques = self.decoder(
-                    word_embedded, decoder_input_embedded, decoder_hidden, question_embedded, kb_facts_embedded,
-                    hist_kb, encoder_outputs, hist_ques)
-
-                ###################### Calculate Loss ################################
-                # TODO: add weight for mini-batch
-                loss += self.mode_loss_rate * XEnLoss(mode_predict.view(1,-1), answer_mode)
-
-                mode_predict = nn.Softmax(dim=2)(mode_predict).view(3, 1)
-                common_mode_predict = mode_predict[0]
-                kb_mode_predict = mode_predict[1]
-                ques_mode_predict = mode_predict[2]
-
-                predicted_probs = torch.cat((common_predict * common_mode_predict, kb_atten_predict * kb_mode_predict,
-                                             ques_atten_predict * ques_mode_predict), 2)
-                if (answer_mode.data[0] == 0): # predict mode
-                    target = answ_var[i]
-                elif (answer_mode.data[0] == 1): # retrieve mode
-                    kb_locs = answ4kb_locs_var_list[i][0][0]
-                    target = self.word_indexer.wordCount + kb_locs.data.tolist().index(1)
-                    target = Variable(torch.LongTensor([target]).view(-1))
-                    if use_cuda:
-                        target = target.cuda()
-                else: # copy mode
-                    ques_locs = answ4ques_locs_var_list[i][0][0]
-                    target = self.word_indexer.wordCount + self.max_fact_num + ques_locs.data.tolist().index(1)
-                    target = Variable(torch.LongTensor([target]).view(-1))
-                    if use_cuda:
-                        target = target.cuda()
-                loss += XEnLoss(predicted_probs.view(1,-1), target)
+                #################### Process KB facts ###############################
+                kb_facts_embedded = []
+                for rel_obj in kb_var_list:
+                    rel_embedded = self.embedding(rel_obj[0]).view(1, 1, -1)
+                    obj_embedded = self.embedding(rel_obj[1]).view(1, 1, -1)
+                    kb_facts_embedded.append(torch.cat((rel_embedded, obj_embedded), 2))
+                avg_kb_facts_embedded = kb_facts_embedded[-1]
                 #####################################################################
 
-                decoder_input = answ_var[i]
-            #####################################################################
 
-            loss.backward()
-            self.optimizer.step()
+                ######################### Encoding ##################################
+                self.encoder.hidden = self.encoder.init_hidden()
+                encoder_outputs = self.encoder(ques_var)
+                question_embedded = self.encoder.hidden[0].view(1, 1, -1)
+                cell_state = self.encoder.hidden[1].view(1, 1, -1)
+                #####################################################################
 
-            loss =  loss.data[0] / answ_length
-            lossTotal += loss
-            if (iter + 1) % 1000 == 0:
-                lossAvg = lossTotal / 1000
-                lossTotal = 0
-                secs = time.time() - startTime
-                mins = math.floor(secs / 60)
-                secs -= mins * 60
-                print('%dm %ds' % (mins, secs), 'after iteration:', iter + 1, 'with avg loss:', lossAvg)
+
+                ######################### Decoding ###################################
+                decoder_hidden = (question_embedded, cell_state)
+                decoder_input = Variable(torch.LongTensor([[SOS]]))
+                hist_ques = Variable(torch.zeros(1, 1, self.max_ques_len))
+                hist_kb = Variable(torch.zeros(1, 1, self.max_fact_num))
+                if use_cuda:
+                    decoder_input = decoder_input.cuda()
+                    hist_kb = hist_kb.cuda()
+                    hist_ques = hist_ques.cuda()
+
+                loss = 0.0
+                for i in range(answ_length):
+                    answer_mode = answer_modes_var_list[i]
+                    word_embedded = self.embedding(decoder_input).view(1, 1, -1)
+                    weighted_question_encoding = Variable(torch.zeros(1, 1, 2 * self.state_size))
+                    weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, 2 * self.embedding_size))
+                    if use_cuda:
+                        weighted_question_encoding = weighted_question_encoding.cuda()
+                        weighted_kb_facts_encoding = weighted_kb_facts_encoding.cuda()
+
+                    if (i > 0):
+                        ques_locs = answ4ques_locs_var_list[i - 1][0][0]
+                        kb_locs = answ4kb_locs_var_list[i - 1][0][0]
+                        question_match_count = 0
+                        kb_facts_match_count = 0
+                        for ques_pos in range(len(ques_locs)):
+                            if ques_locs[ques_pos].data[0] == 1:
+                                weighted_question_encoding += encoder_outputs[ques_pos][0].view(1, 1, -1)
+                                question_match_count += 1
+                        if question_match_count > 0:
+                            weighted_question_encoding /= question_match_count
+                        for kb_idx in range(len(kb_locs)):
+                            if kb_locs[kb_idx].data[0] == 1:
+                                weighted_kb_facts_encoding += kb_facts_embedded[kb_idx]
+                                kb_facts_match_count += 1
+                        if kb_facts_match_count > 0:
+                            weighted_kb_facts_encoding /= kb_facts_match_count
+
+                    decoder_input_embedded = torch.cat((word_embedded, weighted_question_encoding,
+                                                        weighted_kb_facts_encoding, avg_kb_facts_embedded), 2)
+
+                    common_predict, decoder_hidden, mode_predict, kb_atten_predict, hist_kb, ques_atten_predict, hist_ques = self.decoder(
+                        word_embedded, decoder_input_embedded, decoder_hidden, question_embedded, kb_facts_embedded,
+                        hist_kb, encoder_outputs, hist_ques)
+
+                    ###################### Calculate Loss ################################
+                    loss += self.instance_weight * self.mode_loss_rate * XEnLoss(mode_predict.view(1, -1), answer_mode)
+
+                    mode_predict = nn.Softmax(dim=2)(mode_predict).view(3, 1)
+                    common_mode_predict = mode_predict[0]
+                    kb_mode_predict = mode_predict[1]
+                    ques_mode_predict = mode_predict[2]
+
+                    predicted_probs = torch.cat(
+                        (common_predict * common_mode_predict, kb_atten_predict * kb_mode_predict,
+                         ques_atten_predict * ques_mode_predict), 2)
+                    if (answer_mode.data[0] == 0):  # predict mode
+                        target = answ_var[i]
+                    elif (answer_mode.data[0] == 1):  # retrieve mode
+                        kb_locs = answ4kb_locs_var_list[i][0][0]
+                        target = self.word_indexer.wordCount + kb_locs.data.tolist().index(1)
+                        target = Variable(torch.LongTensor([target]).view(-1))
+                        if use_cuda:
+                            target = target.cuda()
+                    else:  # copy mode
+                        ques_locs = answ4ques_locs_var_list[i][0][0]
+                        target = self.word_indexer.wordCount + self.max_fact_num + ques_locs.data.tolist().index(1)
+                        target = Variable(torch.LongTensor([target]).view(-1))
+                        if use_cuda:
+                            target = target.cuda()
+                    loss += self.instance_weight * XEnLoss(predicted_probs.view(1, -1), target)
+                    #####################################################################
+
+                    decoder_input = answ_var[i]
+                #####################################################################
+
+                if (iter + 1) % self.batch_size == 0:
+                    loss.backward()
+                    self.optimizer.step()
+                    self.optimizer.zero_grad()
+
+                loss = loss.data[0] / answ_length
+                lossTotal += loss
+                if (iter + 1) % 1000 == 0:
+                    lossAvg = lossTotal / 1000
+                    lossTotal = 0
+                    secs = time.time() - startTime
+                    mins = math.floor(secs / 60)
+                    secs -= mins * 60
+                    print('%dm %ds' % (mins, secs), 'after iteration:', iter + 1, 'with avg loss:', lossAvg)
 
         self.has_trained = True
         print('Training completed!')

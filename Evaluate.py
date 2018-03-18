@@ -31,25 +31,10 @@ def evaluate(model, testing_data):
         ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts, ques, answ = vars_from_data(
             testing_data[iter])
         target = ''.join(answ)
-       
-        #inputSeq, target = testPairs[iter]
-        #ques_var = Variable(torch.LongTensor(inputSeq).view(-1, 1))
-        #if use_cuda:
-        #    ques_var = ques_var.cuda()
-        #predictedSeq = model.predict(ques_var)
 
         predictedId, predictedToken = model.predict(ques_var, kb_var_list, kb_facts, ques)
         predictedSent = ''.join(predictedToken)
-        '''precision = precision_score(targetSeq, predictedSeq, average='micro')
-        recall = recall_score(targetSeq, predictedSeq, average='micro')
-        F1 = 2 * (precision * recall) / (precision + recall)
-        precisionTotal += precision
-        recallTotal += recall
-        F1Total += F1
-        if (i+1) % 1000 == 0:
-            print ('Test size so far:', i, 'precision:', precisionTotal / (i+1), 'recall:', recallTotal / (i+1),
-                'F1:', F1Total / (i+1))
-        '''
+
         if (iter + 1) % 1000 == 0:
             print(repr(ques).decode('unicode-escape'))
             print(repr(answ).decode('unicode-escape'))
@@ -58,15 +43,14 @@ def evaluate(model, testing_data):
         predictedCount = 0
         appearCount = 0
         correctCount = 0
-
         #entIndex = inputSeq[0]  # index of the entity
         #entity = wordIndexer.index2word[entIndex]
         entity = ques[0]
         entityNumber = int(re.findall('\d+', entity)[0])
         #predictedEntity = entIndex in predictedSeq
         predictedEntity = ques[0] in predictedToken
-        predictedMale = u'他' in predictedToken
-        predictedFemale = u'她' in predictedToken
+        predictedMale = u'他' in predictedSent
+        predictedFemale = u'她' in predictedSent
         if predictedEntity or predictedMale or predictedFemale:
             genderPredicted += 1
             predictedCount += 1
@@ -95,6 +79,11 @@ def evaluate(model, testing_data):
             if yearMatchPredicted and year == yearPredict:
                 yearCorrect += 1
                 correctCount += 1
+            elif yearMatchPredicted:
+                print("Wrong year answer: ")
+                print(repr(ques).decode('unicode-escape'))
+                print(repr(answ).decode('unicode-escape'))
+                print(repr(predictedToken).decode('unicode-escape'))
 
         if (monthMatchPredicted):
             monthPredicted += 1
