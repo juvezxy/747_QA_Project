@@ -30,4 +30,4 @@ FIL = 4
 
 toy_data_path = "toy_data/"
 syn_data_path = "coreqa_data/syn_data/"
-cqa_data_path = "coreqa_data/cqa_data/cqa_triple_origina_v0"
+cqa_data_path = "coreqa_data/cqa_data/"

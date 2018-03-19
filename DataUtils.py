@@ -82,12 +82,13 @@ class WordIndexer:
         return index
 
 class DataLoader(object):
-    def __init__(self, data_path, min_frq=0, max_vocab_size=0):
+    def __init__(self, data_path, is_cqa, min_frq=0, max_vocab_size=0):
         self.qa_data_path = data_path + "qa_pairs"
         self.kb_data_path = data_path + "kb_facts"
+        self.is_cqa = is_cqa
         self.min_frq = min_frq
         self.max_vocab_size = max_vocab_size
-        self.max_fact_num = 4
+        self.max_fact_num = 0
         self.max_ques_len = 0
         self.load_data()
 
@@ -115,34 +116,81 @@ class DataLoader(object):
                     self.wordIndexer.addWord(obj)
                 relations.add(rel)
 
-                facts = self.entity_facts.get(sub, list())
-                facts.append((sub, rel, obj))
+                facts = self.entity_facts.get(sub, set())
+                facts.add((sub, rel, obj))
                 self.entity_facts[sub] = facts
+        if self.is_cqa:
+            with open(self.qa_data_path, 'r', encoding='utf-8') as inputFile:
+                for line in inputFile:
+                    triple_index = line.index('triple')
+                    triples = line[triple_index:]
+                    triples = triples.split('triple')[1:]
+                    for triple in triples:
+                        triple = triple[2:]
+                        parts = triple.split()
+                        if len(parts) < 3:
+                            continue
+                        sub, rel, obj = parts[0].strip(), parts[1].strip(), parts[2].strip()
+                        # TODO: Improve the KB embedding/how to interpret KB
+                        entities.add(sub)
+                        if not is_digit_word(obj):
+                            self.wordIndexer.addWord(obj)
+                        relations.add(rel)
+
+                        facts = self.entity_facts.get(sub, set())
+                        facts.add((sub, rel, obj))
+                        self.entity_facts[sub] = facts
+
         self.kb_relations = relations
         self.kb_entities = entities
         for rel in self.kb_relations:
             self.wordIndexer.addWord(rel)
         for sub in self.entity_facts.keys():
-            self.entity_facts[sub] = sorted(self.entity_facts[sub], key=lambda x: x[0])
+            self.entity_facts[sub] = list(self.entity_facts[sub])
+            #if len(self.entity_facts[sub]) < 64:
+                #print sub
+            self.max_fact_num = max(len(self.entity_facts[sub]), self.max_fact_num)
         print("KB entity size: ", len(self.entity_facts))
         print("KB fact size: ", sum([len(x) for x in self.entity_facts.values()]))
+        print("Max KB fact size: ", self.max_fact_num)
 
         # QA pairs
         print('Reading from file', self.qa_data_path, '...')
         with open(self.qa_data_path, 'r', encoding='utf-8') as inputFile:
             for line in inputFile:
-                question, answer = line.split()
-                self.max_ques_len = max(len(tokenizer(question)), self.max_ques_len)
-                qaPairs.append((question, answer))
+                if self.is_cqa:
+                    triple_index = line.index('triple')
+                    q_a, triples = line[:triple_index], line[triple_index:]
+                    answer_index = q_a.index('answer:')
+                    question, answer = q_a[9:answer_index].strip(), q_a[answer_index+7:].strip()
+                    self.max_ques_len = max(len(tokenizer(question)), self.max_ques_len)
+                    triples = triples.split('triple')[1:]
+                    triple_list = list()
+                    for triple in triples:
+                        triple = triple[2:]
+                        parts = triple.split()
+                        if len(parts) < 3:
+                            continue
+                        sub, rel, obj = parts[0].strip(), parts[1].strip(), parts[2].strip()
+                        triple_list.append((sub, rel, obj))
+                    qaPairs.append((question, answer, triple_list))
+                else:
+                    question, answer = line.split()
+                    self.max_ques_len = max(len(tokenizer(question)), self.max_ques_len)
+                    qaPairs.append((question, answer))
         self.max_ques_len += 1
         print(len(qaPairs), 'pairs read.')
         print('Maximum question length: ', self.max_ques_len)
         shuffle(qaPairs)
 
         split = int(0.9 * len(qaPairs))
+        self.gold_answer = list()
         # Training data
         for i in range(len(qaPairs)):
-            question, answer = qaPairs[i]
+            if self.is_cqa:
+                question, answer, triple_list = qaPairs[i]
+            else:
+                question, answer = qaPairs[i]
             is_training_data = i < split
             if is_training_data:
                 question, question_ids = self.wordIndexer.addSentence(question, self.kb_entities)
@@ -201,6 +249,8 @@ class DataLoader(object):
             else:
                 self.testing_data.append((question, answer, question_ids, answer_ids, kb_facts, kb_facts_ids,
                                            answer_modes, answ4ques_locs, answ4kb_locs))
+                if self.is_cqa:
+                    self.gold_answer.append(triple_list)
 
         print('Processing done.', len(self.training_data), 'training pairs,', len(self.testing_data), 'test pairs.')
         print('Total vocab size: ', self.wordIndexer.wordCount)
