@@ -29,5 +29,6 @@ UNK = 3
 FIL = 4
 
 toy_data_path = "toy_data/"
+toy_cqa_data_path = "toy_cqa_data/"
 syn_data_path = "coreqa_data/syn_data/"
 cqa_data_path = "coreqa_data/cqa_data/"

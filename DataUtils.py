@@ -104,21 +104,6 @@ class DataLoader(object):
         print('Reading from file', self.kb_data_path, '...')
         self.entity_facts = dict()
         entities, relations = set(), set()
-        with open(self.kb_data_path, 'r', encoding='utf-8') as inputFile:
-            for line in inputFile:
-                parts = line.split()
-                if len(parts) < 3:
-                    continue
-                sub, rel, obj = [w.strip() for w in parts]
-                # TODO: Improve the KB embedding/how to interpret KB
-                entities.add(sub)
-                if not is_digit_word(obj):
-                    self.wordIndexer.addWord(obj)
-                relations.add(rel)
-
-                facts = self.entity_facts.get(sub, set())
-                facts.add((sub, rel, obj))
-                self.entity_facts[sub] = facts
         if self.is_cqa:
             with open(self.qa_data_path, 'r', encoding='utf-8') as inputFile:
                 for line in inputFile:
@@ -140,6 +125,22 @@ class DataLoader(object):
                         facts = self.entity_facts.get(sub, set())
                         facts.add((sub, rel, obj))
                         self.entity_facts[sub] = facts
+        else:
+            with open(self.kb_data_path, 'r', encoding='utf-8') as inputFile:
+                for line in inputFile:
+                    parts = line.split()
+                    if len(parts) < 3:
+                        continue
+                    sub, rel, obj = [w.strip() for w in parts]
+                    # TODO: Improve the KB embedding/how to interpret KB
+                    entities.add(sub)
+                    if not is_digit_word(obj):
+                        self.wordIndexer.addWord(obj)
+                    relations.add(rel)
+
+                    facts = self.entity_facts.get(sub, set())
+                    facts.add((sub, rel, obj))
+                    self.entity_facts[sub] = facts
 
         self.kb_relations = relations
         self.kb_entities = entities
