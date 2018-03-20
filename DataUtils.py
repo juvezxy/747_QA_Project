@@ -148,7 +148,7 @@ class DataLoader(object):
                         # TODO: Improve the KB embedding/how to interpret KB
                         entities.add(sub)
                         #if not is_digit_word(obj):
-                            #self.wordIndexer.addWord(obj)
+                            #self.wordIndexer.count_add_word(obj)
                         relations.add(rel)
 
                         facts = self.entity_facts.get(sub, set())
