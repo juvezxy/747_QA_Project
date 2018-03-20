@@ -89,7 +89,7 @@ class DataLoader(object):
         self.min_frq = min_frq
         self.max_vocab_size = max_vocab_size
         self.max_fact_num = 0
-        self.max_ques_len = 0
+        self.max_ques_len = 10
         self.load_data()
 
 
@@ -118,8 +118,8 @@ class DataLoader(object):
                         sub, rel, obj = parts[0].strip(), parts[1].strip(), parts[2].strip()
                         # TODO: Improve the KB embedding/how to interpret KB
                         entities.add(sub)
-                        if not is_digit_word(obj):
-                            self.wordIndexer.addWord(obj)
+                        #if not is_digit_word(obj):
+                            #self.wordIndexer.addWord(obj)
                         relations.add(rel)
 
                         facts = self.entity_facts.get(sub, set())
@@ -153,6 +153,7 @@ class DataLoader(object):
             self.max_fact_num = max(len(self.entity_facts[sub]), self.max_fact_num)
         print("KB entity size: ", len(self.entity_facts))
         print("KB fact size: ", sum([len(x) for x in self.entity_facts.values()]))
+        self.max_fact_num = 10
         print("Max KB fact size: ", self.max_fact_num)
 
         # QA pairs
@@ -164,7 +165,9 @@ class DataLoader(object):
                     q_a, triples = line[:triple_index], line[triple_index:]
                     answer_index = q_a.index('answer:')
                     question, answer = q_a[9:answer_index].strip(), q_a[answer_index+7:].strip()
-                    self.max_ques_len = max(len(tokenizer(question)), self.max_ques_len)
+                    #self.max_ques_len = max(len(tokenizer(question)), self.max_ques_len)
+                    if len(tokenizer(question)) > self.max_ques_len:
+                        continue
                     triples = triples.split('triple')[1:]
                     triple_list = list()
                     for triple in triples:
@@ -179,7 +182,7 @@ class DataLoader(object):
                     question, answer = line.split()
                     self.max_ques_len = max(len(tokenizer(question)), self.max_ques_len)
                     qaPairs.append((question, answer))
-        self.max_ques_len += 1
+        self.max_ques_len = 11
         print(len(qaPairs), 'pairs read.')
         print('Maximum question length: ', self.max_ques_len)
         shuffle(qaPairs)

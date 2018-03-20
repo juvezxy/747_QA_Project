@@ -47,9 +47,9 @@ def evaluate(model, testing_data, gold_answer, is_cqa):
             print(repr(predictedToken).decode('unicode-escape'))
 
         if is_cqa: # evaluate cqa_data
-            print (target)
-            print (predictedSent)
-            print (gold_answer[iter])
+            #print (target)
+            #print (predictedSent)
+            #print (gold_answer[iter])
             triple_list = gold_answer[iter]
             correct = 1
             for (sub, rel, obj) in triple_list:
