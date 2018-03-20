@@ -68,8 +68,7 @@ class WordIndexer:
         tokenized.append("_EOS")
         return tokenized, indexList
 
-    # index the word and return its correponding index
-    def addWord(self, word):
+    def count_add_word(self, word):
         if word not in self.word2index:
             index = self.wordCount
             self.word2index[word] = self.wordCount
@@ -80,6 +79,36 @@ class WordIndexer:
             self.word2count[word] += 1
             index = self.word2index[word]
         return index
+
+    # index the word and return its correponding index
+    def addWord(self, word):
+        count = self.word2count.get(word, 0)
+        # only keep words with freq > 3 
+        if count <= 3:
+            self.word2index[word] = UNK
+            return UNK
+
+        if word not in self.word2index:
+            index = self.wordCount
+            self.word2index[word] = self.wordCount
+            self.index2word[self.wordCount] = word
+            self.wordCount += 1
+        else:
+            index = self.word2index[word]
+        return index
+
+    def count_sentence(self, sentence, entity=list()):
+        tokenized = tokenizer(sentence)
+        for word in tokenized:
+            if word not in entity and not is_digit_word(word):
+                self.count_word(word)
+
+    def count_word(self, word):
+        if word not in self.word2count:
+            self.word2count[word] = 1
+        else:
+            self.word2count[word] += 1
+
 
 class DataLoader(object):
     def __init__(self, data_path, is_cqa, min_frq=0, max_vocab_size=0):
@@ -135,7 +164,7 @@ class DataLoader(object):
                     # TODO: Improve the KB embedding/how to interpret KB
                     entities.add(sub)
                     if not is_digit_word(obj):
-                        self.wordIndexer.addWord(obj)
+                        self.wordIndexer.count_add_word(obj)
                     relations.add(rel)
 
                     facts = self.entity_facts.get(sub, set())
@@ -145,7 +174,7 @@ class DataLoader(object):
         self.kb_relations = relations
         self.kb_entities = entities
         for rel in self.kb_relations:
-            self.wordIndexer.addWord(rel)
+            self.wordIndexer.count_add_word(rel)
         for sub in self.entity_facts.keys():
             self.entity_facts[sub] = list(self.entity_facts[sub])
             #if len(self.entity_facts[sub]) < 64:
@@ -189,7 +218,17 @@ class DataLoader(object):
 
         split = int(0.9 * len(qaPairs))
         self.gold_answer = list()
-        # Training data
+
+        # Counting words
+        for i in range(len(qaPairs)):
+            if self.is_cqa:
+                question, answer, triple_list = qaPairs[i]
+            else:
+                question, answer = qaPairs[i]
+            is_training_data = i < split
+            if is_training_data:
+                self.wordIndexer.count_sentence(question, self.kb_entities)
+        # Indexing words
         for i in range(len(qaPairs)):
             if self.is_cqa:
                 question, answer, triple_list = qaPairs[i]
