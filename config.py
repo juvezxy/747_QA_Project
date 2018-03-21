@@ -6,6 +6,7 @@ from random import shuffle
 import time
 import re
 import random
+import string
 import config
 import jieba
 
