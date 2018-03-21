@@ -31,7 +31,7 @@ def tokenizer(sentence):
         postEnt = sentence[entMatch.end():]
         tokenized_list = list(jieba.cut(preEnt, cut_all=False)) + [ent] + list(jieba.cut(postEnt, cut_all=False))
     else:
-        tokenized_list = list(jieba.cut(sentence, cut_all=False))
+        tokenized_list = [token for token in jieba.cut(sentence, cut_all=False) if token != ' ']
     return tokenized_list
 
 class WordIndexer:
