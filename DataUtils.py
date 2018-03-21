@@ -208,9 +208,12 @@ class DataLoader(object):
                             continue
                         sub, rel, obj = parts[0].strip(), parts[1].strip(), parts[2].strip()
                         triple_list.append((sub, rel, obj))
+                    if len(triple_list) < 1:
+                        continue
                     first_entity = triple_list[0][0]
                     if len(tokenizer(question, first_entity)) > self.max_ques_len:
                         continue
+
                     qaPairs.append((question, answer, triple_list))
                 else:
                     question, answer = line.split()
@@ -254,16 +257,23 @@ class DataLoader(object):
                 question_ids.append(FIL)
 
             kb_facts,kb_facts_ids = [], []
-            for word in question:
-                kb_facts += self.entity_facts.get(word, list())
+            if self.is_cqa:
+                kb_facts = [triple_list[0]]
+                for triple in self.entity_facts.get(first_entity, list()):
+                    if triple != triple_list[0]:
+                        kb_facts.append(triple)
+            else:
+                for word in question:
+                    kb_facts += self.entity_facts.get(word, list())
             if len(kb_facts) > self.max_fact_num:
-                shuffle(kb_facts)
+                #shuffle(kb_facts)
                 kb_facts = kb_facts[:self.max_fact_num]
             else:
                 for pad_index in range(self.max_fact_num - len(kb_facts)):
                     kb_facts.append(("_FIL", "_FIL", "_FIL"))
             for (sub, rel, obj) in kb_facts:
                 kb_facts_ids.append((self.wordIndexer.word2index.get(rel, PAD),self.wordIndexer.word2index.get(obj, PAD)))
+
             fact_objs = [x[2] for x in kb_facts]
 
             answer_modes = []
