@@ -21,7 +21,7 @@ if __name__ == '__main__':
     model_params["ques_attention_size"] = 200
     model_params["kb_attention_size"] = 200
     model_params["learning_rate"] = 0.001
-    model_params["mode_loss_rate"] = 0
+    model_params["mode_loss_rate"] = 0.01
     model_params["batch_size"] = 100
     model_params["epoch_size"] = 1
     model_params["L2_factor"] = 0.0001

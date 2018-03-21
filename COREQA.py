@@ -53,7 +53,7 @@ class COREQA(object):
         for epoch in range(self.epoch_size):
             shuffle(training_data)
             #for iter in range(len(training_data)):
-            for iter in range(50000):
+            for iter in range(100000):
                 ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts, ques, answ = vars_from_data(
                     training_data[iter])
                 answ_length = answ_var.size()[0]
@@ -222,14 +222,17 @@ class COREQA(object):
             common_mode_predict = mode_predict[0]
             kb_mode_predict = mode_predict[1]
             ques_mode_predict = mode_predict[2]
+            if common_mode_predict > 0.5:
+                common_mode_predict -= 0.3
+                kb_mode_predict += 0.3
             predicted_probs = torch.cat((common_predict * common_mode_predict, kb_atten_predict * kb_mode_predict,
                                              ques_atten_predict * ques_mode_predict), 2)
             topv3, topi3 = predicted_probs.data.topk(3)
             idx = topi3[0][0][0]
             if idx == PAD or idx == UNK:
-                idx = topi3[1][0][0]
+                idx = topi3[0][0][1]
                 if idx == PAD or idx == UNK:
-                    idx = topi3[2][0][0]
+                    idx = topi3[0][0][2]
             if idx < self.word_indexer.wordCount: # predict mode
                 if idx == EOS:
                     decoded_id.append(EOS)
