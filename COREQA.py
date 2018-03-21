@@ -222,9 +222,9 @@ class COREQA(object):
             common_mode_predict = mode_predict[0]
             kb_mode_predict = mode_predict[1]
             ques_mode_predict = mode_predict[2]
-            if common_mode_predict.data[0] > 0.5:
-                common_mode_predict = common_mode_predict - 0.1
-                kb_mode_predict = kb_mode_predict + 0.1
+            #if common_mode_predict.data[0] > 0.5:
+            #    common_mode_predict = common_mode_predict - 0.1
+            #    kb_mode_predict = kb_mode_predict + 0.1
             predicted_probs = torch.cat((common_predict * common_mode_predict, kb_atten_predict * kb_mode_predict,
                                              ques_atten_predict * ques_mode_predict), 2)
             topv3, topi3 = predicted_probs.data.topk(3)
