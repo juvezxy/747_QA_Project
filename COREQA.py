@@ -53,7 +53,7 @@ class COREQA(object):
         for epoch in range(self.epoch_size):
             shuffle(training_data)
             #for iter in range(len(training_data)):
-            for iter in range(1000):
+            for iter in range(100000):
                 ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts, ques, answ = vars_from_data(
                     training_data[iter])
                 answ_length = answ_var.size()[0]
@@ -223,8 +223,8 @@ class COREQA(object):
             kb_mode_predict = mode_predict[1]
             ques_mode_predict = mode_predict[2]
             if common_mode_predict.data[0] > 0.5:
-                common_mode_predict -= 0.3
-                kb_mode_predict += 0.3
+                common_mode_predict = common_mode_predict - 0.3
+                kb_mode_predict = kb_mode_predict + 0.3
             predicted_probs = torch.cat((common_predict * common_mode_predict, kb_atten_predict * kb_mode_predict,
                                              ques_atten_predict * ques_mode_predict), 2)
             topv3, topi3 = predicted_probs.data.topk(3)

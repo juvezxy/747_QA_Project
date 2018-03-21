@@ -84,7 +84,7 @@ class WordIndexer:
     def addWord(self, word):
         count = self.word2count.get(word, 0)
         # only keep words with freq > 3 
-        if count <= 10:
+        if count <= 30:
             self.word2index[word] = UNK
             return UNK
 
