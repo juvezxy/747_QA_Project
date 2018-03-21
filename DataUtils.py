@@ -84,7 +84,7 @@ class WordIndexer:
     def addWord(self, word):
         count = self.word2count.get(word, 0)
         # only keep words with freq > 3 
-        if count <= 3:
+        if count <= 10:
             self.word2index[word] = UNK
             return UNK
 
@@ -177,12 +177,9 @@ class DataLoader(object):
             self.wordIndexer.count_add_word(rel)
         for sub in self.entity_facts.keys():
             self.entity_facts[sub] = list(self.entity_facts[sub])
-            #if len(self.entity_facts[sub]) < 64:
-                #print sub
-            self.max_fact_num = max(len(self.entity_facts[sub]), self.max_fact_num)
         print("KB entity size: ", len(self.entity_facts))
         print("KB fact size: ", sum([len(x) for x in self.entity_facts.values()]))
-        self.max_fact_num = 10
+        self.max_fact_num = 4
         print("Max KB fact size: ", self.max_fact_num)
 
         # QA pairs
