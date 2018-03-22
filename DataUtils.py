@@ -243,16 +243,18 @@ class DataLoader(object):
             if self.is_cqa:
                 question, answer, triple_list = qaPairs[i]
                 first_entity = triple_list[0][0]
+                first_entity_obj = triple_list[0][2]
             else:
                 question, answer = qaPairs[i]
                 first_entity = None
+                first_entity_obj = None
             is_training_data = i < split
             if is_training_data:
                 question, question_ids = self.wordIndexer.addSentence(question, self.kb_entities, first_entity)
-                answer, answer_ids = self.wordIndexer.addSentence(answer, self.kb_entities, first_entity)
+                answer, answer_ids = self.wordIndexer.addSentence(answer, self.kb_entities, first_entity_obj)
             else:
                 question, question_ids = self.wordIndexer.indexSentence(question, self.kb_entities, first_entity)
-                answer, answer_ids = self.wordIndexer.indexSentence(answer, self.kb_entities, first_entity)
+                answer, answer_ids = self.wordIndexer.indexSentence(answer, self.kb_entities, first_entity_obj)
             for pad_to_max in range(self.max_ques_len - len(question_ids)):
                 question_ids.append(FIL)
 
