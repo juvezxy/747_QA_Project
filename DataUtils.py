@@ -231,28 +231,29 @@ class DataLoader(object):
         for i in range(len(qaPairs)):
             if self.is_cqa:
                 question, answer, triple_list = qaPairs[i]
-                first_entity = triple_list[0][0]
+                first_entity, first_obj = triple_list[0][0], triple_list[0][2]
             else:
                 question, answer = qaPairs[i]
-                first_entity = None
+                first_entity, first_obj = None, None
             is_training_data = i < split
             if is_training_data:
                 self.wordIndexer.count_sentence(question, self.kb_entities, first_entity)
+                self.wordIndexer.count_sentence(answer, self.kb_entities, first_obj)
         # Indexing words
         for i in range(len(qaPairs)):
             if self.is_cqa:
                 question, answer, triple_list = qaPairs[i]
-                first_entity = triple_list[0][0]
+                first_entity, first_obj = triple_list[0][0], triple_list[0][2]
             else:
                 question, answer = qaPairs[i]
-                first_entity = None
+                first_entity, first_obj = None, None
             is_training_data = i < split
             if is_training_data:
                 question, question_ids = self.wordIndexer.addSentence(question, self.kb_entities, first_entity)
-                answer, answer_ids = self.wordIndexer.addSentence(answer, self.kb_entities, first_entity)
+                answer, answer_ids = self.wordIndexer.addSentence(answer, self.kb_entities, first_obj)
             else:
                 question, question_ids = self.wordIndexer.indexSentence(question, self.kb_entities, first_entity)
-                answer, answer_ids = self.wordIndexer.indexSentence(answer, self.kb_entities, first_entity)
+                answer, answer_ids = self.wordIndexer.indexSentence(answer, self.kb_entities, first_obj)
             for pad_to_max in range(self.max_ques_len - len(question_ids)):
                 question_ids.append(FIL)
 

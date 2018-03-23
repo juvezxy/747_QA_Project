@@ -15,15 +15,15 @@ if __name__ == '__main__':
     # Init Model
     model_params = {}
     model_params["word_indexer"] = data_loader.wordIndexer
-    model_params["embedding_size"] = 200
-    model_params["state_size"] = 256
+    model_params["embedding_size"] = 300
+    model_params["state_size"] = 512
     model_params["mode_size"] = 200
     model_params["ques_attention_size"] = 200
     model_params["kb_attention_size"] = 200
     model_params["learning_rate"] = 0.001
     model_params["mode_loss_rate"] = 1
     model_params["batch_size"] = 100
-    model_params["epoch_size"] = 10
+    model_params["epoch_size"] = 1
     model_params["L2_factor"] = 0.0001
     model_params["max_fact_num"] = data_loader.max_fact_num
     model_params["max_ques_len"] = data_loader.max_ques_len
