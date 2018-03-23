@@ -22,13 +22,9 @@ def vars_from_data(data):
     else:
         return (ques_var, answ_var, kb_var, answer_modes_var, answ4ques_locs_var, answ4kb_locs_var, kb_facts, question, answer)
 
-def tokenizer(sentence, entity=None):
+def tokenizer(sentence):
     tokenized_list = []
-    if (entity is not None): # cqa_data
-        pattern = re.compile(entity)
-        entMatch = pattern.search(sentence)
-    else: # syn_data
-        entMatch = entPattern.search(sentence)
+    entMatch = entPattern.search(sentence)
     if (entMatch):
         preEnt = sentence[:entMatch.start()]
         ent = entMatch.group()
@@ -46,9 +42,9 @@ class WordIndexer:
         self.wordCount = 5
 
     # index each word in the sentence and return a list of indices
-    def addSentence(self, sentence, entity=list(), first_entity=None):
+    def addSentence(self, sentence, entity=list()):
         indexList = []
-        tokenized = tokenizer(sentence, first_entity)
+        tokenized = tokenizer(sentence)
         for word in tokenized:
             if word not in entity and not is_digit_word(word):
                 indexList.append(self.addWord(word))
@@ -59,9 +55,9 @@ class WordIndexer:
         tokenized.append("_EOS")
         return tokenized, indexList
 
-    def indexSentence(self, sentence, entity=list(), first_entity=None):
+    def indexSentence(self, sentence, entity=list()):
         indexList = []
-        tokenized = tokenizer(sentence, first_entity)
+        tokenized = tokenizer(sentence)
         for word in tokenized:
             if word not in entity and not is_digit_word(word):
                 indexList.append(self.word2index.get(word, UNK))
@@ -101,8 +97,8 @@ class WordIndexer:
             index = self.word2index[word]
         return index
 
-    def count_sentence(self, sentence, entity=list(), first_entity=None):
-        tokenized = tokenizer(sentence, first_entity)
+    def count_sentence(self, sentence, entity=list()):
+        tokenized = tokenizer(sentence)
         for word in tokenized:
             if word not in entity and not is_digit_word(word):
                 self.count_word(word)
@@ -126,7 +122,6 @@ class DataLoader(object):
         self.load_data()
 
 
-    # jieba.load_userdict(config.userDictPath)
     def load_data(self):
         self.wordIndexer = WordIndexer()
         self.testing_data = []
@@ -151,6 +146,7 @@ class DataLoader(object):
                         sub, rel, obj = parts[0].strip(), parts[1].strip(), parts[2].strip()
                         # TODO: Improve the KB embedding/how to interpret KB
                         entities.add(sub)
+                        entities.add(obj)
                         #if not is_digit_word(obj):
                             #self.wordIndexer.count_add_word(obj)
                         relations.add(rel)
@@ -177,6 +173,12 @@ class DataLoader(object):
 
         self.kb_relations = relations
         self.kb_entities = entities
+        with open(config.user_dict_path, 'w', encoding='utf-8') as out:
+            for entity in self.kb_entities:
+                entity = ''.join(word for word in entity if word not in config.all_punctuation)
+                out.write(entity + '\n')
+        jieba.load_userdict(config.user_dict_path)
+
         for rel in self.kb_relations:
             self.wordIndexer.count_add_word(rel)
         for sub in self.entity_facts.keys():
@@ -195,8 +197,8 @@ class DataLoader(object):
                     q_a, triples = line[:triple_index], line[triple_index:]
                     answer_index = q_a.index('answer:')
                     question, answer = q_a[9:answer_index].strip(), q_a[answer_index+7:].strip()
-                    question = ''.join(word for word in question if word not in string.punctuation)
-                    answer = ''.join(word for word in answer if word not in string.punctuation)
+                    question = ''.join(word for word in question if word not in config.all_punctuation)
+                    answer = ''.join(word for word in answer if word not in config.all_punctuation)
                     #self.max_ques_len = max(len(tokenizer(question)), self.max_ques_len)
                     
                     triples = triples.split('triple')[1:]
@@ -210,8 +212,7 @@ class DataLoader(object):
                         triple_list.append((sub, rel, obj))
                     if len(triple_list) < 1:
                         continue
-                    first_entity = triple_list[0][0]
-                    if len(tokenizer(question, first_entity)) > self.max_ques_len:
+                    if len(tokenizer(question)) > self.max_ques_len:
                         continue
 
                     qaPairs.append((question, answer, triple_list))
@@ -231,36 +232,31 @@ class DataLoader(object):
         for i in range(len(qaPairs)):
             if self.is_cqa:
                 question, answer, triple_list = qaPairs[i]
-                first_entity = triple_list[0][0]
             else:
                 question, answer = qaPairs[i]
-                first_entity = None
             is_training_data = i < split
             if is_training_data:
-                self.wordIndexer.count_sentence(question, self.kb_entities, first_entity)
+                self.wordIndexer.count_sentence(question, self.kb_entities)
         # Indexing words
         for i in range(len(qaPairs)):
             if self.is_cqa:
                 question, answer, triple_list = qaPairs[i]
-                first_entity = triple_list[0][0]
-                first_entity_obj = triple_list[0][2]
             else:
                 question, answer = qaPairs[i]
-                first_entity = None
-                first_entity_obj = None
             is_training_data = i < split
             if is_training_data:
-                question, question_ids = self.wordIndexer.addSentence(question, self.kb_entities, first_entity)
-                answer, answer_ids = self.wordIndexer.addSentence(answer, self.kb_entities, first_entity_obj)
+                question, question_ids = self.wordIndexer.addSentence(question, self.kb_entities)
+                answer, answer_ids = self.wordIndexer.addSentence(answer, self.kb_entities)
             else:
-                question, question_ids = self.wordIndexer.indexSentence(question, self.kb_entities, first_entity)
-                answer, answer_ids = self.wordIndexer.indexSentence(answer, self.kb_entities, first_entity_obj)
+                question, question_ids = self.wordIndexer.indexSentence(question, self.kb_entities)
+                answer, answer_ids = self.wordIndexer.indexSentence(answer, self.kb_entities)
             for pad_to_max in range(self.max_ques_len - len(question_ids)):
                 question_ids.append(FIL)
 
             kb_facts,kb_facts_ids = [], []
             if self.is_cqa:
                 kb_facts = [triple_list[0]]
+                first_entity = triple_list[0][0]
                 for triple in self.entity_facts.get(first_entity, list()):
                     if triple != triple_list[0]:
                         kb_facts.append(triple)
