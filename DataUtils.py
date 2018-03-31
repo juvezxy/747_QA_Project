@@ -152,7 +152,7 @@ class DataLoader(object):
                         if len(parts) < 3:
                             continue
                         sub, rel, obj = parts[0].strip(), parts[1].strip(), parts[2].strip()
-                        # TODO: Improve the KB embedding/how to interpret KB
+
                         entities.add(sub)
                         entities.add(obj)
 
@@ -192,7 +192,6 @@ class DataLoader(object):
             self.entity_facts[sub] = list(self.entity_facts[sub])
         print("KB entity size: ", len(self.entity_facts))
         print("KB fact size: ", sum([len(x) for x in self.entity_facts.values()]))
-        self.max_fact_num = 4
         print("Max KB fact size: ", self.max_fact_num)
 
         # QA pairs
@@ -225,7 +224,7 @@ class DataLoader(object):
                     qaPairs.append((question, answer, triple_list))
                 else:
                     question, answer = line.split()
-                    #self.max_ques_len = max(len(tokenizer(question)), self.max_ques_len)
+                    self.max_ques_len = max(len(tokenizer(question)), self.max_ques_len)
                     qaPairs.append((question, answer))
         self.max_ques_len += 1
         print(len(qaPairs), 'pairs read.')

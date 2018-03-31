@@ -22,7 +22,7 @@ if __name__ == '__main__':
     model_params["kb_attention_size"] = 200
     model_params["learning_rate"] = 0.0001
     model_params["mode_loss_rate"] = 1.0
-    model_params["batch_size"] = 1
+    model_params["batch_size"] = 10
     model_params["epoch_size"] = 10
     model_params["L2_factor"] = 0.00001
     model_params["max_fact_num"] = data_loader.max_fact_num

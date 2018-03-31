@@ -53,7 +53,6 @@ class COREQA(object):
             self.optimizer.zero_grad()
             shuffle(training_data)
             for iter in range(len(training_data)):
-            #for iter in range(200000):
                 ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts, ques, answ = vars_from_data(
                     training_data[iter])
                 answ_length = answ_var.size()[0]
@@ -227,10 +226,6 @@ class COREQA(object):
                                              ques_atten_predict * ques_mode_predict), 2)
             topv3, topi3 = predicted_probs.data.topk(3)
             idx = topi3[0][0][0]
-            if idx == PAD or idx == UNK:
-                idx = topi3[0][0][1]
-                if idx == PAD or idx == UNK:
-                    idx = topi3[0][0][2]
             if idx < self.word_indexer.wordCount: # predict mode
                 if idx == EOS:
                     decoded_id.append(EOS)
