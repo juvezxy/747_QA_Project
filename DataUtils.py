@@ -22,7 +22,7 @@ def vars_from_data(data):
     else:
         return (ques_var, answ_var, kb_var, answer_modes_var, answ4ques_locs_var, answ4kb_locs_var, kb_facts, question, answer)
 
-def tokenizer(sentence):
+def tokenizer(sentence, ent=None):
     tokenized_list = []
     entMatch = entPattern.search(sentence)
     if (entMatch):
@@ -30,6 +30,14 @@ def tokenizer(sentence):
         ent = entMatch.group()
         postEnt = sentence[entMatch.end():]
         tokenized_list = list(jieba.cut(preEnt, cut_all=False)) + [ent] + list(jieba.cut(postEnt, cut_all=False))
+    elif ent is not None:
+        try:
+            index = sentence.index(ent)
+            preEnt = sentence[:index]
+            postEnt = sentence[index+len(ent):]
+            tokenized_list = list(jieba.cut(preEnt, cut_all=False)) + [ent] + list(jieba.cut(postEnt, cut_all=False))
+        except:
+            tokenized_list = [token for token in jieba.cut(sentence, cut_all=False) if token not in string.whitespace]
     else:
         tokenized_list = [token for token in jieba.cut(sentence, cut_all=False) if token not in string.whitespace]
     return tokenized_list
@@ -42,9 +50,9 @@ class WordIndexer:
         self.wordCount = 5
 
     # index each word in the sentence and return a list of indices
-    def addSentence(self, sentence, entity=list()):
+    def addSentence(self, sentence, entity=list(), ent=None):
         indexList = []
-        tokenized = tokenizer(sentence)
+        tokenized = tokenizer(sentence, ent)
         for word in tokenized:
             if word not in entity and not is_digit_word(word):
                 indexList.append(self.addWord(word))
@@ -55,9 +63,9 @@ class WordIndexer:
         tokenized.append("_EOS")
         return tokenized, indexList
 
-    def indexSentence(self, sentence, entity=list()):
+    def indexSentence(self, sentence, entity=list(), ent=None):
         indexList = []
-        tokenized = tokenizer(sentence, first_entity)
+        tokenized = tokenizer(sentence, ent)
         for word in tokenized:
             if word not in entity and not is_digit_word(word):
                 indexList.append(self.word2index.get(word, UNK))
@@ -118,7 +126,7 @@ class DataLoader(object):
         self.min_frq = min_frq
         self.max_vocab_size = max_vocab_size
         self.max_fact_num = 0
-        self.max_ques_len = 10
+        self.max_ques_len = 9
         self.load_data()
 
 
@@ -147,8 +155,7 @@ class DataLoader(object):
                         # TODO: Improve the KB embedding/how to interpret KB
                         entities.add(sub)
                         entities.add(obj)
-                        #if not is_digit_word(obj):
-                            #self.wordIndexer.count_add_word(obj)
+
                         relations.add(rel)
 
                         facts = self.entity_facts.get(sub, set())
@@ -176,7 +183,7 @@ class DataLoader(object):
         with open(config.user_dict_path, 'w', encoding='utf-8') as out:
             for entity in self.kb_entities:
                 entity = ''.join(word for word in entity if word not in config.all_punctuation)
-                out.write(entity + '\n')
+                out.write(repr(entity).decode('unicode-escape') + '\n')
         jieba.load_userdict(config.user_dict_path)
 
         for rel in self.kb_relations:
@@ -218,9 +225,9 @@ class DataLoader(object):
                     qaPairs.append((question, answer, triple_list))
                 else:
                     question, answer = line.split()
-                    self.max_ques_len = max(len(tokenizer(question)), self.max_ques_len)
+                    #self.max_ques_len = max(len(tokenizer(question)), self.max_ques_len)
                     qaPairs.append((question, answer))
-        self.max_ques_len = 11
+        self.max_ques_len += 1
         print(len(qaPairs), 'pairs read.')
         print('Maximum question length: ', self.max_ques_len)
         shuffle(qaPairs)
@@ -238,6 +245,7 @@ class DataLoader(object):
             if is_training_data:
                 self.wordIndexer.count_sentence(question, self.kb_entities)
         # Indexing words
+        matched_pair = 0
         for i in range(len(qaPairs)):
             if self.is_cqa:
                 question, answer, triple_list = qaPairs[i]
@@ -246,10 +254,16 @@ class DataLoader(object):
             is_training_data = i < split
             if is_training_data:
                 question, question_ids = self.wordIndexer.addSentence(question, self.kb_entities)
-                answer, answer_ids = self.wordIndexer.addSentence(answer, self.kb_entities)
+                if self.is_cqa:
+                    answer, answer_ids = self.wordIndexer.addSentence(answer, self.kb_entities, triple_list[0][2])
+                else:
+                    answer, answer_ids = self.wordIndexer.addSentence(answer, self.kb_entities)
             else:
                 question, question_ids = self.wordIndexer.indexSentence(question, self.kb_entities)
-                answer, answer_ids = self.wordIndexer.indexSentence(answer, self.kb_entities)
+                if self.is_cqa:
+                    answer, answer_ids = self.wordIndexer.indexSentence(answer, self.kb_entities, triple_list[0][2])
+                else:
+                    answer, answer_ids = self.wordIndexer.indexSentence(answer, self.kb_entities)
             for pad_to_max in range(self.max_ques_len - len(question_ids)):
                 question_ids.append(FIL)
 
@@ -264,7 +278,7 @@ class DataLoader(object):
                 for word in question:
                     kb_facts += self.entity_facts.get(word, list())
             if len(kb_facts) > self.max_fact_num:
-                #shuffle(kb_facts)
+                shuffle(kb_facts)
                 kb_facts = kb_facts[:self.max_fact_num]
             else:
                 for pad_index in range(self.max_fact_num - len(kb_facts)):
@@ -274,10 +288,13 @@ class DataLoader(object):
 
             fact_objs = [x[2] for x in kb_facts]
 
-            answer_modes = []
+            answer_modes, has_kb_matched = [], False
             answ4ques_locs, answ4kb_locs = [], []
             for word in answer:
                 if word in fact_objs: # mode 1: retrieve mode
+                    if not has_kb_matched:
+                        has_kb_matched = True
+                        matched_pair += 1
                     answer_modes.append(1)
                     kb_locs = list()
                     for obj in fact_objs:
@@ -303,14 +320,15 @@ class DataLoader(object):
                     answer_modes.append(0)
                     answ4ques_locs.append([0]*self.max_ques_len)
                     answ4kb_locs.append([0]*self.max_fact_num)
-            if is_training_data:
-                self.training_data.append((question, answer, question_ids, answer_ids, kb_facts, kb_facts_ids,
-                                           answer_modes, answ4ques_locs, answ4kb_locs))
-            else:
-                self.testing_data.append((question, answer, question_ids, answer_ids, kb_facts, kb_facts_ids,
-                                           answer_modes, answ4ques_locs, answ4kb_locs))
-                if self.is_cqa:
-                    self.gold_answer.append(triple_list)
+            if has_kb_matched:
+                if is_training_data:
+                    self.training_data.append((question, answer, question_ids, answer_ids, kb_facts, kb_facts_ids,
+                                               answer_modes, answ4ques_locs, answ4kb_locs))
+                else:
+                    self.testing_data.append((question, answer, question_ids, answer_ids, kb_facts, kb_facts_ids,
+                                               answer_modes, answ4ques_locs, answ4kb_locs))
+                    if self.is_cqa:
+                        self.gold_answer.append(triple_list)
 
         print('Processing done.', len(self.training_data), 'training pairs,', len(self.testing_data), 'test pairs.')
         print('Total vocab size: ', self.wordIndexer.wordCount)

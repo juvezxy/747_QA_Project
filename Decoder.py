@@ -35,7 +35,6 @@ class Decoder(nn.Module):
         self.mode_mlp_w2 = nn.Linear(self.mode_size, 3)
 
     def forward(self, input_embedded, input_cat, hidden, question_embedded, kb_facts_embedded, hist_kb, encoder_outputs, hist_ques):
-        #output = F.relu(input_cat)
         output, hidden = self.lstm(input_cat, hidden)
 
         state = hidden[0]

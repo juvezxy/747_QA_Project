@@ -90,4 +90,4 @@ stops = (
 #: A string containing all Chinese punctuation.
 ch_punctuation = non_stops + stops
 
-all_punctuation = ch_punctuation + string.punctuation
+all_punctuation = ch_punctuation + string.punctuation + ' '
