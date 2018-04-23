@@ -2,7 +2,7 @@
 
 from Encoder import *
 from Decoder import *
-from DataUtils import *
+from DataUtilsNew import *
 from config import *
 
 class COREQA(object):

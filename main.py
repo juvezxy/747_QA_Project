@@ -2,15 +2,16 @@
 from __future__ import unicode_literals, print_function, division
 from Evaluate import *
 from COREQA import *
-from DataUtils import *
+from DataUtilsNew import *
 from config import *
 
 
 if __name__ == '__main__':
 
     # Process Data
-    data_loader = DataLoader(cqa_data_path, True)
+    #data_loader = DataLoader(cqa_data_path, True)
     #data_loader = DataLoader(syn_data_path, False)
+    data_loader = DataLoader(toy_msmarco_path, True)
 
     # Init Model
     model_params = {}
@@ -23,7 +24,7 @@ if __name__ == '__main__':
     model_params["learning_rate"] = 0.0001
     model_params["mode_loss_rate"] = 1.0
     model_params["batch_size"] = 10
-    model_params["epoch_size"] = 10
+    model_params["epoch_size"] = 1
     model_params["L2_factor"] = 0.00001
     model_params["max_fact_num"] = data_loader.max_fact_num
     model_params["max_ques_len"] = data_loader.max_ques_len
