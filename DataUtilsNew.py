@@ -314,7 +314,8 @@ class DataLoader(object):
                     answer_modes.append(0)
                     answ4ques_locs.append([0]*self.max_ques_len)
                     answ4kb_locs.append([0]*self.max_fact_num)
-            if has_kb_matched:
+            #if has_kb_matched:
+            if (True):
                 if is_training_data:
                     self.training_data.append((question, answer, question_ids, answer_ids, kb_facts, kb_facts_ids,
                                                answer_modes, answ4ques_locs, answ4kb_locs))
