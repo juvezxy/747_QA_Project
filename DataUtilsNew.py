@@ -133,7 +133,7 @@ class DataLoader(object):
         qaPairs = []
         with open(qa_data_path, 'r', encoding='utf-8') as inputFile:
             for line in inputFile:
-                triple_index = line.index('fact')
+                triple_index = line.index('fact:')
                 q_a, triples = line[:triple_index], line[triple_index:]
                 answer_index = q_a.index('answer:')
                 question, answer = q_a[9:answer_index].strip(), q_a[answer_index+7:].strip()
@@ -141,7 +141,7 @@ class DataLoader(object):
                 answer = self.normalize(answer)
                 #self.max_ques_len = max(len(tokenizer(question)), self.max_ques_len)
                 
-                triples = triples.split('fact')[1:]
+                triples = triples.split('fact:')
                 triple_list = list()
                 for triple in triples:
                     triple = triple[1:]
@@ -171,9 +171,9 @@ class DataLoader(object):
     
         with open(self.train_path, 'r', encoding='utf-8') as inputFile:
             for line in inputFile:
-                triple_index = line.index('fact')
+                triple_index = line.index('fact:')
                 triples = line[triple_index:]
-                triples = triples.split('fact')[1:]
+                triples = triples.split('fact:')
                 for triple in triples:
                     triple = triple[1:]
                     parts = triple.split('\t')
@@ -192,9 +192,9 @@ class DataLoader(object):
                     self.entity_facts[sub] = facts
         with open(self.test_path, 'r', encoding='utf-8') as inputFile:
             for line in inputFile:
-                triple_index = line.index('fact')
+                triple_index = line.index('fact:')
                 triples = line[triple_index:]
-                triples = triples.split('fact')[1:]
+                triples = triples.split('fact:')
                 for triple in triples:
                     triple = triple[1:]
                     parts = triple.split('\t')

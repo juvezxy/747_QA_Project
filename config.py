@@ -8,7 +8,6 @@ import re
 import random
 import string
 import config
-import jieba
 
 import torch
 import torch.nn as nn

@@ -11,7 +11,7 @@ if __name__ == '__main__':
     # Process Data
     #data_loader = DataLoader(cqa_data_path, True)
     #data_loader = DataLoader(syn_data_path, False)
-    data_loader = DataLoader(toy_msmarco_path, True)
+    data_loader = DataLoader(msmarco_path, True)
 
     # Init Model
     model_params = {}
