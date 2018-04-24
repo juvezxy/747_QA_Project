@@ -123,7 +123,7 @@ class DataLoader(object):
         self.min_frq = min_frq
         self.max_vocab_size = max_vocab_size
         self.max_fact_num = 1
-        self.max_ques_len = 9
+        self.max_ques_len = 20
         self.load_data()
 
     def normalize(self, sent):
@@ -141,10 +141,9 @@ class DataLoader(object):
                 answer = self.normalize(answer)
                 #self.max_ques_len = max(len(tokenizer(question)), self.max_ques_len)
                 
-                triples = triples.split('fact:')
+                triples = triples.split('fact:')[1:]
                 triple_list = list()
                 for triple in triples:
-                    triple = triple[1:]
                     parts = triple.split('\t')
                     if len(parts) < 3: # only contains object
                         sub, rel, obj = '_PAD', '_PAD', self.normalize(parts[0].strip())
@@ -173,9 +172,8 @@ class DataLoader(object):
             for line in inputFile:
                 triple_index = line.index('fact:')
                 triples = line[triple_index:]
-                triples = triples.split('fact:')
+                triples = triples.split('fact:')[1:]
                 for triple in triples:
-                    triple = triple[1:]
                     parts = triple.split('\t')
                     if len(parts) < 3: # only contains object
                         sub, rel, obj = '_PAD', '_PAD', self.normalize(parts[0].strip())
@@ -194,9 +192,8 @@ class DataLoader(object):
             for line in inputFile:
                 triple_index = line.index('fact:')
                 triples = line[triple_index:]
-                triples = triples.split('fact:')
+                triples = triples.split('fact:')[1:]
                 for triple in triples:
-                    triple = triple[1:]
                     parts = triple.split('\t')
                     if len(parts) < 3: # only contains object
                         sub, rel, obj = '_PAD', '_PAD', self.normalize(parts[0].strip())
