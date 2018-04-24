@@ -41,15 +41,11 @@ def evaluate(model, testing_data, gold_answer, is_cqa):
         predictedId, predictedToken = model.predict(ques_var, kb_var_list, kb_facts, ques)
         predictedSent = ' '.join(predictedToken)
 
-        if (iter + 1) % 1000 == 0:
-            print(repr(ques).decode('unicode-escape'))
-            print(repr(answ).decode('unicode-escape'))
-            print(repr(predictedToken).decode('unicode-escape'))
-
         if is_cqa: # evaluate cqa_data
+            print (''.join(ques))
             print (target)
             print (predictedSent)
-            print (gold_answer[iter])
+            #print (gold_answer[iter])
             triple_list = gold_answer[iter]
             correct = 1
             for (sub, rel, obj) in triple_list:
