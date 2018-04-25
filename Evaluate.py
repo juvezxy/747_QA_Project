@@ -2,7 +2,7 @@
 
 from config import *
 from COREQA import *
-
+from os import system
 
 def evaluate(model, testing_data, gold_answer, is_cqa):
     if not model.has_trained:
@@ -14,6 +14,8 @@ def evaluate(model, testing_data, gold_answer, is_cqa):
         correct_multi = 0
         single_count = 0
         multi_count = 0
+        gold_list = []
+        pred_list = []
     else:
         precisionTotal = 0
         recallTotal = 0
@@ -42,9 +44,11 @@ def evaluate(model, testing_data, gold_answer, is_cqa):
         predictedSent = ' '.join(predictedToken)
 
         if is_cqa: # evaluate cqa_data
-            print (''.join(ques))
+            print (' '.join(ques))
             print (target)
             print (predictedSent)
+            gold_list.append(target)
+            pred_list.append(predictedSent)
             #print (gold_answer[iter])
             triple_list = gold_answer[iter]
             correct = 1
@@ -137,6 +141,13 @@ def evaluate(model, testing_data, gold_answer, is_cqa):
         if multi_count > 0:
             print ('Accuracy for multi-fact questions:', correct_multi * 1.0 / multi_count, 'out of', multi_count)
         print ('Accuracy for all questions:', (correct_single+correct_multi) * 1.0 / test_length)
+        with open(config.out_path + 'gold', 'w', encoding='utf-8') as gold_output:
+            for gold in gold_list:
+                gold_output.write(gold + '\n')
+        with open(config.out_path + 'pred', 'w', encoding='utf-8') as pred_output:
+            for pred in pred_list:
+                pred_output.write(pred + '\n')
+        system(config.bleu_script_path + ' ' + config.out_path + 'gold' + ' < ' + config.out_path + 'pred')
     else: # result for syn_data
         if genderPredicted > 0:
             print('Precision of gender:', genderCorrect * 1.0 / genderPredicted)

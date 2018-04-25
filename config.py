@@ -35,6 +35,9 @@ cqa_data_path = "coreqa_data/cqa_data/"
 user_dict_path = "user_dict"
 msmarco_path = "msmarco_data/"
 toy_msmarco_path = "toy_msmarco_data/"
+out_path = "output/"
+bleu_script_path = "./multi-bleu.perl"
+
 #: A string containing Chinese punctuation marks (non-stops).
 non_stops = (
     # Fullwidth ASCII variants
