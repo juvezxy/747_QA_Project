@@ -7,7 +7,7 @@ import time
 import re
 import random
 import string
-import config
+from allennlp.commands.elmo import ElmoEmbedder
 
 import torch
 import torch.nn as nn

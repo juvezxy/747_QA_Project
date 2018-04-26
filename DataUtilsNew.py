@@ -87,7 +87,7 @@ class WordIndexer:
     def addWord(self, word):
         count = self.word2count.get(word, 0)
         # only keep words with freq > 3 
-        if count <= 3:
+        if count <= 2:
             self.word2index[word] = UNK
             return UNK
 
@@ -124,6 +124,7 @@ class DataLoader(object):
         self.max_vocab_size = max_vocab_size
         self.max_fact_num = 1
         self.max_ques_len = 20
+        self.embedder = ElmoEmbedder()
         self.load_data()
 
     def normalize(self, sent):
@@ -311,13 +312,17 @@ class DataLoader(object):
                     answer_modes.append(0)
                     answ4ques_locs.append([0]*self.max_ques_len)
                     answ4kb_locs.append([0]*self.max_fact_num)
-            #if has_kb_matched:
+            # Textualized representation
+            question_embedded = torch.from_numpy(self.embedder.embed_sentence(question))
+            answer_embedded = [torch.from_numpy(self.embedder.embed_sentence([word]))[:,0][0] for word in answer]
+            kb_fact_embedded = torch.from_numpy(self.embedder.embed_sentence([kb_facts[0][-1]]))[:,0][0]
+            
             if (True):
                 if is_training_data:
-                    self.training_data.append((question, answer, question_ids, answer_ids, kb_facts, kb_facts_ids,
+                    self.training_data.append((question, answer, question_embedded, answer_embedded, kb_facts, kb_fact_embedded,
                                                answer_modes, answ4ques_locs, answ4kb_locs))
                 else:
-                    self.testing_data.append((question, answer, question_ids, answer_ids, kb_facts, kb_facts_ids,
+                    self.testing_data.append((question, answer, question_embedded, answer_embedded, kb_facts, kb_fact_embedded,
                                                answer_modes, answ4ques_locs, answ4kb_locs))
                     self.gold_answer.append(triple_list)
 

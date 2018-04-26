@@ -30,10 +30,10 @@ if __name__ == '__main__':
     model_params["max_ques_len"] = data_loader.max_ques_len
     model_params["MAX_LENGTH"] = 20
 
-    model = COREQA(model_params)
+    #model = COREQA(model_params)
 
     # Train Model
-    model.fit(data_loader.training_data)
+    #model.fit(data_loader.training_data)
 
     # Evaluate
-    evaluate(model, data_loader.testing_data, data_loader.gold_answer, True)
+    #evaluate(model, data_loader.testing_data, data_loader.gold_answer, True)
