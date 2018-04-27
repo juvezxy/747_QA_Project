@@ -11,7 +11,15 @@ if __name__ == '__main__':
     # Process Data
     #data_loader = DataLoader(cqa_data_path, True)
     #data_loader = DataLoader(syn_data_path, False)
-    data_loader = DataLoader(msmarco_path, True)
+    if load_from_preprocessed:
+        print ("Loading from preprocessed file ...")
+        with open(preprocessed_data_path, 'r') as preprocessed:
+            data_loader = pickle.load(preprocessed)
+    else:
+        data_loader = DataLoader(toy_msmarco_path, True)
+        print ("Saving to preprocessed file ...")
+        with open(preprocessed_data_path, 'w') as preprocessed:
+            pickle.dump(data_loader, preprocessed)
 
     # Init Model
     model_params = {}
