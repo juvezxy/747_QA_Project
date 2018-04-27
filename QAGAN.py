@@ -115,7 +115,6 @@ class QAGAN(object):
                                 kb_facts_match_count += 1
                         if kb_facts_match_count > 0:
                             weighted_kb_facts_encoding /= kb_facts_match_count
-                    print(word_embedded.size(), weighted_kb_facts_encoding.size(), weighted_question_encoding.size())
                     decoder_input_embedded = torch.cat((word_embedded, weighted_question_encoding,
                                                         weighted_kb_facts_encoding), 2)
 
