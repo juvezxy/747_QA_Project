@@ -8,7 +8,7 @@ import re
 import random
 import string
 from allennlp.commands.elmo import ElmoEmbedder
-import pickle
+import dill as pickle
 
 import torch
 import torch.nn as nn

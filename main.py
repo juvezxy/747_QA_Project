@@ -19,7 +19,7 @@ if __name__ == '__main__':
         data_loader = DataLoader(toy_msmarco_path, True)
         print ("Saving to preprocessed file ...")
         with open(preprocessed_data_path, 'wb') as preprocessed:
-            pickle.dump(data_loader, preprocessed, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(data_loader, preprocessed)
 
     # Init Model
     model_params = {}

@@ -123,7 +123,6 @@ class DataLoader(object):
         self.max_vocab_size = max_vocab_size
         self.max_fact_num = 1
         self.max_ques_len = 20
-        self.embedder = ElmoEmbedder()
         self.load_data()
 
     def normalize(self, sent):
@@ -245,6 +244,7 @@ class DataLoader(object):
                 self.wordIndexer.count_sentence(question, self.kb_entities)
         # Indexing words
         matched_pair = 0
+        embedder = ElmoEmbedder()
         for i in range(len(qaPairs)):
             question, answer, triple_list = qaPairs[i]
             #print (qaPairs[i])
@@ -312,10 +312,10 @@ class DataLoader(object):
                     answ4ques_locs.append([0]*self.max_ques_len)
                     answ4kb_locs.append([0]*self.max_fact_num)
             # Textualized representation
-            question_embedded = torch.from_numpy(self.embedder.embed_sentence(question)).transpose(0,1).contiguous().view(len(question),1,-1)
-            answer_embedded = [torch.from_numpy(self.embedder.embed_sentence([word]))[:,0][0].view(1,1,-1) for word in answer]
+            question_embedded = torch.from_numpy(embedder.embed_sentence(question)).transpose(0,1).contiguous().view(len(question),1,-1)
+            answer_embedded = [torch.from_numpy(embedder.embed_sentence([word]))[:,0][0].view(1,1,-1) for word in answer]
             answer_embedded = torch.cat(answer_embedded, 0)
-            kb_fact_embedded = torch.from_numpy(self.embedder.embed_sentence([kb_facts[0][-1]]))[:,0][0].view(1,1,-1)
+            kb_fact_embedded = torch.from_numpy(embedder.embed_sentence([kb_facts[0][-1]]))[:,0][0].view(1,1,-1)
 
             if (True):
                 if is_training_data:
