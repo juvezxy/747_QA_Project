@@ -38,7 +38,7 @@ msmarco_path = "msmarco_data/"
 toy_msmarco_path = "toy_msmarco_data/"
 out_path = "output/"
 bleu_script_path = "./multi-bleu.perl"
-load_from_preprocessed = False
+load_from_preprocessed = True
 preprocessed_data_path = "preprocessed_data"
 
 #: A string containing Chinese punctuation marks (non-stops).

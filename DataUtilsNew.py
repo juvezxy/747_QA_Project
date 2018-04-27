@@ -5,20 +5,19 @@ def is_digit_word(word):
     return re.match(r'\d+', word)
 
 def vars_from_data(data):
-    question, answer, question_ids, answer_ids, kb_facts, kb_facts_ids, answer_modes, answ4ques_locs, answ4kb_locs = data
-    ques_var = Variable(torch.LongTensor(question_ids).view(-1, 1))
-    answ_var = Variable(torch.LongTensor(answer_ids).view(-1, 1))
-    kb_var = [Variable(torch.LongTensor(kb_fact_id).view(-1, 1)) for kb_fact_id in kb_facts_ids]
+    question, answer, question_embedded, answer_embedded, kb_facts, kb_facts_embedded, answer_modes, answ4ques_locs, answ4kb_locs = data
+    ques_var = Variable(question_embedded)
+    answ_var = Variable(answer_embedded)
+    kb_var = Variable(kb_facts_embedded)
     answer_modes_var = [Variable(torch.LongTensor([answer_mode]).view(-1)) for answer_mode in answer_modes]
     answ4ques_locs_var = [Variable(torch.LongTensor(answ4ques_loc).view(1, 1, -1)) for answ4ques_loc in answ4ques_locs]
     answ4kb_locs_var = [Variable(torch.LongTensor(answ4kb_loc).view(1, 1, -1)) for answ4kb_loc in answ4kb_locs]
 
     if use_cuda:
-        kb_var = [kb_fact_var.cuda() for kb_fact_var in kb_var]
         answer_modes_var = [answer_mode_var.cuda() for answer_mode_var in answer_modes_var]
         answ4ques_locs_var = [answ4ques_loc_var.cuda() for answ4ques_loc_var in answ4ques_locs_var]
         answ4kb_locs_var = [answ4kb_loc_var.cuda() for answ4kb_loc_var in answ4kb_locs_var]
-        return (ques_var.cuda(), answ_var.cuda(), kb_var, answer_modes_var, answ4ques_locs_var, answ4kb_locs_var, kb_facts, question, answer)
+        return (ques_var.cuda(), answ_var.cuda(), kb_var.cuda(), answer_modes_var, answ4ques_locs_var, answ4kb_locs_var, kb_facts, question, answer)
     else:
         return (ques_var, answ_var, kb_var, answer_modes_var, answ4ques_locs_var, answ4kb_locs_var, kb_facts, question, answer)
 
@@ -313,10 +312,11 @@ class DataLoader(object):
                     answ4ques_locs.append([0]*self.max_ques_len)
                     answ4kb_locs.append([0]*self.max_fact_num)
             # Textualized representation
-            question_embedded = torch.from_numpy(self.embedder.embed_sentence(question))
-            answer_embedded = [torch.from_numpy(self.embedder.embed_sentence([word]))[:,0][0] for word in answer]
-            kb_fact_embedded = torch.from_numpy(self.embedder.embed_sentence([kb_facts[0][-1]]))[:,0][0]
-            
+            question_embedded = torch.from_numpy(self.embedder.embed_sentence(question)).transpose(0,1).contiguous().view(len(question),1,-1)
+            answer_embedded = [torch.from_numpy(self.embedder.embed_sentence([word]))[:,0][0].view(1,1,-1) for word in answer]
+            answer_embedded = torch.cat(answer_embedded, 0)
+            kb_fact_embedded = torch.from_numpy(self.embedder.embed_sentence([kb_facts[0][-1]]))[:,0][0].view(1,1,-1)
+
             if (True):
                 if is_training_data:
                     self.training_data.append((question, answer, question_embedded, answer_embedded, kb_facts, kb_fact_embedded,
