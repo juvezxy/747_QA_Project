@@ -4,7 +4,7 @@ from __future__ import unicode_literals, print_function, division
 from config import *
 
 class Encoder(nn.Module):
-    def __init__(self, input_size, state_size, embedding):
+    def __init__(self, input_size, state_size, embedding_size):
         super(Encoder, self).__init__()
         self.state_size = state_size
         self.embedding = embedding

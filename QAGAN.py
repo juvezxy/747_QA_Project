@@ -27,10 +27,9 @@ class QAGAN(object):
         self.has_trained = False
 
         ################ Initialize graph components ########################
-        self.embedding = nn.Embedding(self.word_indexer.wordCount, self.embedding_size)
-        self.encoder = Encoder(self.word_indexer.wordCount, self.state_size, self.embedding)
+        self.encoder = Encoder(self.word_indexer.wordCount, self.state_size, self.embedding_size)
         self.decoder = Decoder(output_size=self.word_indexer.wordCount, state_size=self.state_size,
-                               embedding=self.embedding, mode_size=self.mode_size,
+                               embedding_size=self.embedding_size, mode_size=self.mode_size,
                                kb_attention_size=self.kb_attention_size, max_fact_num=self.max_fact_num,
                                ques_attention_size=self.ques_attention_size, max_ques_len=self.max_ques_len)
         if use_cuda:

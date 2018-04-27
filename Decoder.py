@@ -4,7 +4,7 @@ from __future__ import unicode_literals, print_function, division
 from config import *
 
 class Decoder(nn.Module):
-    def __init__(self, output_size, state_size, embedding, mode_size, kb_attention_size, max_fact_num, ques_attention_size, max_ques_len):
+    def __init__(self, output_size, state_size, embedding_size, mode_size, kb_attention_size, max_fact_num, ques_attention_size, max_ques_len):
         super(Decoder, self).__init__()
         self.output_size = output_size
         self.state_size = 2 * state_size
