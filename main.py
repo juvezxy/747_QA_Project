@@ -25,7 +25,7 @@ if __name__ == '__main__':
     model_params = {}
     model_params["word_indexer"] = data_loader.wordIndexer
     model_params["embedding_size"] = 1024
-    model_params["state_size"] = 512
+    model_params["state_size"] = 510
     model_params["mode_size"] = 200
     model_params["ques_attention_size"] = 200
     model_params["kb_attention_size"] = 200
@@ -41,7 +41,7 @@ if __name__ == '__main__':
     model = QAGAN(model_params)
 
     # Train Model
-    #model.fit(data_loader.training_data)
+    model.fit(data_loader.training_data)
 
     # Evaluate
     #evaluate(model, data_loader.testing_data, data_loader.gold_answer, True)

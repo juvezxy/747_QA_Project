@@ -8,14 +8,13 @@ class Decoder(nn.Module):
         super(Decoder, self).__init__()
         self.output_size = output_size
         self.state_size = 2 * state_size
-        self.embedding = embedding
-        self.embedding_size = self.embedding.weight.size()[1]
+        self.embedding_size = embedding_size
         self.mode_size = mode_size
         self.kb_attention_size = kb_attention_size
         self.max_fact_num = max_fact_num
         self.ques_attention_size = ques_attention_size
         self.max_ques_len = max_ques_len
-        self.lstm_input_size = 5 * self.embedding_size + self.state_size
+        self.lstm_input_size = 2 * self.embedding_size + self.state_size
         self.lstm = nn.LSTM(self.lstm_input_size, self.state_size)
         self.out = nn.Linear(self.state_size, self.output_size)
 
@@ -25,7 +24,7 @@ class Decoder(nn.Module):
         self.ques_atten_mlp_w2 = nn.Linear(self.ques_attention_size, 1)
 
         # KB attention network
-        self.kb_atten_state_size = 2 * self.state_size + 2 * self.embedding_size + self.max_fact_num
+        self.kb_atten_state_size = 2 * self.state_size + 1 * self.embedding_size + self.max_fact_num
         self.kb_atten_mlp_w1 = nn.Linear(self.kb_atten_state_size, self.kb_attention_size)
         self.kb_atten_mlp_w2 = nn.Linear(self.kb_attention_size, 1)
 
@@ -34,7 +33,7 @@ class Decoder(nn.Module):
         self.mode_mlp_w1 = nn.Linear(self.mode_state_size, self.mode_size)
         self.mode_mlp_w2 = nn.Linear(self.mode_size, 3)
 
-    def forward(self, input_embedded, input_cat, hidden, question_embedded, kb_facts_embedded, hist_kb, encoder_outputs, hist_ques):
+    def forward(self, input_embedded, input_cat, hidden, question_embedded, kb_fact_embedded, hist_kb, encoder_outputs, hist_ques):
         output, hidden = self.lstm(input_cat, hidden)
 
         state = hidden[0]
@@ -56,11 +55,9 @@ class Decoder(nn.Module):
 
         ###################### KB attention #################################
         kb_atten_states = torch.cat((state, hist_kb), 2)
-        kb_atten_states = [torch.cat((kb_atten_states, kb_fact_embedded, question_embedded), 2) for kb_fact_embedded in
-                           kb_facts_embedded]
-        kb_atten_states = [F.tanh(self.kb_atten_mlp_w1(kb_atten_state)) for kb_atten_state in kb_atten_states]
-        kb_atten_states = [self.kb_atten_mlp_w2(kb_atten_state) for kb_atten_state in kb_atten_states]
-        kb_atten_predict = torch.cat(kb_atten_states, 2)
+        kb_atten_states = torch.cat((kb_atten_states, kb_fact_embedded, question_embedded), 2)
+        kb_atten_states = F.tanh(self.kb_atten_mlp_w1(kb_atten_states))
+        kb_atten_predict = self.kb_atten_mlp_w2(kb_atten_states)
         hist_kb += kb_atten_predict
         #####################################################################
 

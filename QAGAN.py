@@ -45,24 +45,28 @@ class QAGAN(object):
             print('Warning! Trying to fit a trained model.')
 
         print('Start training ...')
+        embedder = ElmoEmbedder()
         startTime = time.time()
         lossTotal = 0.0
         XEnLoss = nn.CrossEntropyLoss()
         for epoch in range(self.epoch_size):
             self.optimizer.zero_grad()
             shuffle(training_data)
-            for iter in range(len(training_data)):
-                ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts, ques, answ = vars_from_data(
+            #for iter in range(len(training_data)):
+            for iter in range(1):
+                ques_var, answ_var, kb_var, answ_id_var, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts, ques, answ = vars_from_data(
                     training_data[iter])
                 answ_length = answ_var.size()[0]
 
                 #################### Process KB facts ###############################
+                '''
                 kb_facts_embedded = []
                 for rel_obj in kb_var_list:
                     rel_embedded = self.embedding(rel_obj[0]).view(1, 1, -1)
                     obj_embedded = self.embedding(rel_obj[1]).view(1, 1, -1)
                     kb_facts_embedded.append(torch.cat((rel_embedded, obj_embedded), 2))
-                avg_kb_facts_embedded = kb_facts_embedded[0]
+                '''
+                kb_fact_embedded = kb_var
                 #####################################################################
 
 
@@ -76,7 +80,7 @@ class QAGAN(object):
 
                 ######################### Decoding ###################################
                 decoder_hidden = (question_embedded, cell_state)
-                decoder_input = Variable(torch.LongTensor([[SOS]]))
+                decoder_input = Variable(torch.from_numpy(embedder.embed_sentence(["_SOS"]))[:,0][0].view(1,1,-1))
                 hist_ques = Variable(torch.zeros(1, 1, self.max_ques_len))
                 hist_kb = Variable(torch.zeros(1, 1, self.max_fact_num))
                 if use_cuda:
@@ -87,9 +91,9 @@ class QAGAN(object):
                 loss = 0.0
                 for i in range(answ_length):
                     answer_mode = answer_modes_var_list[i]
-                    word_embedded = self.embedding(decoder_input).view(1, 1, -1)
+                    word_embedded = decoder_input
                     weighted_question_encoding = Variable(torch.zeros(1, 1, 2 * self.state_size))
-                    weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, 2 * self.embedding_size))
+                    weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, self.embedding_size))
                     if use_cuda:
                         weighted_question_encoding = weighted_question_encoding.cuda()
                         weighted_kb_facts_encoding = weighted_kb_facts_encoding.cuda()
@@ -107,16 +111,16 @@ class QAGAN(object):
                             weighted_question_encoding /= question_match_count
                         for kb_idx in range(len(kb_locs)):
                             if kb_locs[kb_idx].data[0] == 1:
-                                weighted_kb_facts_encoding += kb_facts_embedded[kb_idx]
+                                weighted_kb_facts_encoding += kb_fact_embedded
                                 kb_facts_match_count += 1
                         if kb_facts_match_count > 0:
                             weighted_kb_facts_encoding /= kb_facts_match_count
-
+                    print(word_embedded.size(), weighted_kb_facts_encoding.size(), weighted_question_encoding.size())
                     decoder_input_embedded = torch.cat((word_embedded, weighted_question_encoding,
-                                                        weighted_kb_facts_encoding, avg_kb_facts_embedded), 2)
+                                                        weighted_kb_facts_encoding), 2)
 
                     common_predict, decoder_hidden, mode_predict, kb_atten_predict, hist_kb, ques_atten_predict, hist_ques = self.decoder(
-                        word_embedded, decoder_input_embedded, decoder_hidden, question_embedded, kb_facts_embedded,
+                        word_embedded, decoder_input_embedded, decoder_hidden, question_embedded, kb_fact_embedded,
                         hist_kb, encoder_outputs, hist_ques)
 
                     ###################### Calculate Loss ################################
@@ -131,7 +135,7 @@ class QAGAN(object):
                         (common_predict * common_mode_predict, kb_atten_predict * kb_mode_predict,
                          ques_atten_predict * ques_mode_predict), 2)
                     if (answer_mode.data[0] == 0):  # predict mode
-                        target = answ_var[i]
+                        target = answ_id_var[i]
                     elif (answer_mode.data[0] == 1):  # retrieve mode
                         kb_locs = answ4kb_locs_var_list[i][0][0]
                         target = self.word_indexer.wordCount + kb_locs.data.tolist().index(1)
@@ -147,7 +151,7 @@ class QAGAN(object):
                     loss += self.instance_weight * XEnLoss(predicted_probs.view(1, -1), target)
                     #####################################################################
 
-                    decoder_input = answ_var[i]
+                    decoder_input = answ_var[i].view(1,1,-1)
                 #####################################################################
 
                 if (iter + 1) % self.batch_size == 0:

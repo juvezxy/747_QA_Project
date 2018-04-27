@@ -5,9 +5,10 @@ def is_digit_word(word):
     return re.match(r'\d+', word)
 
 def vars_from_data(data):
-    question, answer, question_embedded, answer_embedded, kb_facts, kb_facts_embedded, answer_modes, answ4ques_locs, answ4kb_locs = data
+    question, answer, question_embedded, answer_embedded, answer_ids, kb_facts, kb_facts_embedded, answer_modes, answ4ques_locs, answ4kb_locs = data
     ques_var = Variable(question_embedded)
     answ_var = Variable(answer_embedded)
+    answ_id_var = Variable(torch.LongTensor(answer_ids).view(-1, 1))
     kb_var = Variable(kb_facts_embedded)
     answer_modes_var = [Variable(torch.LongTensor([answer_mode]).view(-1)) for answer_mode in answer_modes]
     answ4ques_locs_var = [Variable(torch.LongTensor(answ4ques_loc).view(1, 1, -1)) for answ4ques_loc in answ4ques_locs]
@@ -17,9 +18,9 @@ def vars_from_data(data):
         answer_modes_var = [answer_mode_var.cuda() for answer_mode_var in answer_modes_var]
         answ4ques_locs_var = [answ4ques_loc_var.cuda() for answ4ques_loc_var in answ4ques_locs_var]
         answ4kb_locs_var = [answ4kb_loc_var.cuda() for answ4kb_loc_var in answ4kb_locs_var]
-        return (ques_var.cuda(), answ_var.cuda(), kb_var.cuda(), answer_modes_var, answ4ques_locs_var, answ4kb_locs_var, kb_facts, question, answer)
+        return (ques_var.cuda(), answ_var.cuda(), kb_var.cuda(), answ_id_var.cuda(), answer_modes_var, answ4ques_locs_var, answ4kb_locs_var, kb_facts, question, answer)
     else:
-        return (ques_var, answ_var, kb_var, answer_modes_var, answ4ques_locs_var, answ4kb_locs_var, kb_facts, question, answer)
+        return (ques_var, answ_var, kb_var, answ_id_var, answer_modes_var, answ4ques_locs_var, answ4kb_locs_var, kb_facts, question, answer)
 
 def tokenizer(sentence, ent=None):
     tokenized_list = []
@@ -122,7 +123,7 @@ class DataLoader(object):
         self.min_frq = min_frq
         self.max_vocab_size = max_vocab_size
         self.max_fact_num = 1
-        self.max_ques_len = 20
+        self.max_ques_len = 10
         self.load_data()
 
     def normalize(self, sent):
@@ -256,7 +257,7 @@ class DataLoader(object):
                 question, question_ids = self.wordIndexer.indexSentence(question, self.kb_entities)
                 answer, answer_ids = self.wordIndexer.indexSentence(answer, self.kb_entities, triple_list[0][2])
             for pad_to_max in range(self.max_ques_len - len(question_ids)):
-                question_ids.append(FIL)
+                question.append('_FIL')
 
             kb_facts,kb_facts_ids = [], []
             
@@ -319,10 +320,10 @@ class DataLoader(object):
 
             if (True):
                 if is_training_data:
-                    self.training_data.append((question, answer, question_embedded, answer_embedded, kb_facts, kb_fact_embedded,
+                    self.training_data.append((question, answer, question_embedded, answer_embedded, answer_ids, kb_facts, kb_fact_embedded,
                                                answer_modes, answ4ques_locs, answ4kb_locs))
                 else:
-                    self.testing_data.append((question, answer, question_embedded, answer_embedded, kb_facts, kb_fact_embedded,
+                    self.testing_data.append((question, answer, question_embedded, answer_embedded, answer_ids, kb_facts, kb_fact_embedded,
                                                answer_modes, answ4ques_locs, answ4kb_locs))
                     self.gold_answer.append(triple_list)
 
