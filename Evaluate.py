@@ -36,11 +36,11 @@ def evaluate(model, testing_data, gold_answer, is_cqa):
         totalPrecision = 0
         totalRecall = 0
     for iter in range(test_length):
-        ques_var, answ_var, kb_var_list, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts, ques, answ = vars_from_data(
+        ques_var, answ_var, kb_var, answ_id_var, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts, ques, answ = vars_from_data(
             testing_data[iter])
         target = ' '.join(answ)
 
-        predictedId, predictedToken = model.predict(ques_var, kb_var_list, kb_facts, ques)
+        predictedId, predictedToken = model.predict(ques_var, kb_var, kb_facts, ques)
         predictedSent = ' '.join(predictedToken)
 
         if is_cqa: # evaluate cqa_data

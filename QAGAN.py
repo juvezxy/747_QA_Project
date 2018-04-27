@@ -171,7 +171,7 @@ class QAGAN(object):
         self.has_trained = True
         print('Training completed!')
 
-    def predict(self, ques_var, kb_var_list, kb_facts, ques):
+    def predict(self, ques_var, kb_var, kb_facts, ques):
         # inputLength = inputVar.size()[0]
 
         #################### Process KB facts ###############################
@@ -183,6 +183,8 @@ class QAGAN(object):
             kb_facts_embedded.append(torch.cat((rel_embedded, obj_embedded), 2))
         '''
         kb_fact_embedded = kb_var
+        embedder = ElmoEmbedder()
+
         #####################################################################
 
 
@@ -192,7 +194,6 @@ class QAGAN(object):
         question_embedded = self.encoder.hidden[0].view(1, 1, -1)
         cell_state = self.encoder.hidden[1].view(1, 1, -1)
         #####################################################################
-
 
 
         ######################### Decoding ###################################
@@ -239,16 +240,13 @@ class QAGAN(object):
                     decoded_id.append(idx)
                     word = self.word_indexer.index2word[idx]
                     decoded_token.append(word)
-                    decoder_input = Variable(torch.LongTensor([[idx]]))
+                    decoder_input = Variable(torch.from_numpy(embedder.embed_sentence([word]))[:,0][0].view(1,1,-1))
                     weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, self.embedding_size))
             elif idx < self.word_indexer.wordCount + self.max_fact_num:  # retrieve mode
                 kb_idx = idx - self.word_indexer.wordCount
-                rel_obj_idx = kb_var_list[kb_idx]
-                obj_idx = rel_obj_idx[1]
-                decoded_id.append(obj_idx.data[0])
                 kb_sub, kb_rel, kb_obj = kb_facts[kb_idx]
                 decoded_token.append(kb_obj)
-                decoder_input = obj_idx
+                decoder_input = kb_var
                 weighted_kb_facts_encoding = kb_fact_embedded
             else:  # copy mode
                 copy_idx = idx - self.word_indexer.wordCount - self.max_fact_num
@@ -259,7 +257,7 @@ class QAGAN(object):
                 else:
                     word = FIL
                 decoded_token.append(word)
-                decoder_input = word_idx
+                decoder_input = Variable(torch.from_numpy(embedder.embed_sentence([word]))[:,0][0].view(1,1,-1))
                 weighted_question_encoding = encoder_outputs[copy_idx].view(1, 1, -1)
             if use_cuda:
                 weighted_kb_facts_encoding = weighted_kb_facts_encoding.cuda()

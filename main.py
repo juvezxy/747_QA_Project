@@ -44,4 +44,4 @@ if __name__ == '__main__':
     model.fit(data_loader.training_data)
 
     # Evaluate
-    #evaluate(model, data_loader.testing_data, data_loader.gold_answer, True)
+    evaluate(model, data_loader.testing_data, data_loader.gold_answer, True)
