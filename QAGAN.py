@@ -10,6 +10,7 @@ from config import *
 class QAGAN(object):
     def __init__(self, model_params):
         self.word_indexer = model_params["word_indexer"]
+        self.word_embedder = model_params["word_embedder"]
         self.embedding_size = model_params["embedding_size"]
         self.state_size = model_params["state_size"]
         self.mode_size = model_params["mode_size"]
@@ -40,6 +41,7 @@ class QAGAN(object):
         if use_cuda:
             self.encoder.cuda()
             self.decoder.cuda()
+            self.positioner.cuda()
 
         self.optimizer = optim.Adam(list(self.encoder.parameters()) + list(self.decoder.parameters()) + list(self.positioner.parameters()),
                                     lr=self.learning_rate, weight_decay=self.L2_factor)
@@ -57,7 +59,7 @@ class QAGAN(object):
             self.optimizer.zero_grad()
             shuffle(training_data)
             for iter in range(len(training_data)):
-            #for iter in range(1):
+            #for iter in range(100):
                 ques_var, answ_var, kb_var, kb_position_var, answ_id_var, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts, ques, answ = vars_from_data(
                     training_data[iter])
                 answ_length = answ_var.size()[0]
@@ -194,7 +196,6 @@ class QAGAN(object):
             kb_facts_embedded.append(torch.cat((rel_embedded, obj_embedded), 2))
         '''
         kb_fact_embedded = kb_var
-        embedder = ElmoEmbedder()
 
         #####################################################################
 
@@ -257,7 +258,7 @@ class QAGAN(object):
                     decoded_id.append(idx)
                     word = self.word_indexer.index2word[idx]
                     decoded_token.append(word)
-                    decoder_input = Variable(torch.from_numpy(embedder.embed_sentence([word]))[:,0][0].view(1,1,-1))
+                    decoder_input = Variable(self.word_embedder[word])
                     weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, self.embedding_size))
             elif idx < self.word_indexer.wordCount + self.max_fact_num:  # retrieve mode
                 kb_idx = idx - self.word_indexer.wordCount
@@ -274,7 +275,7 @@ class QAGAN(object):
                 else:
                     word = FIL
                 decoded_token.append(word)
-                decoder_input = Variable(torch.from_numpy(embedder.embed_sentence([word]))[:,0][0].view(1,1,-1))
+                decoder_input = Variable(self.word_embedder[word])
                 weighted_question_encoding = encoder_outputs[copy_idx].view(1, 1, -1)
             if use_cuda:
                 weighted_kb_facts_encoding = weighted_kb_facts_encoding.cuda()

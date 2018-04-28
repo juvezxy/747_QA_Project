@@ -9,7 +9,7 @@ def vars_from_data(data):
     ques_var = Variable(question_embedded)
     answ_var = Variable(answer_embedded)
     answ_id_var = Variable(torch.LongTensor(answer_ids).view(-1, 1))
-    kb_position_var = Variable(torch.LongTensor(kb_position).view(-1))
+    kb_position_var = Variable(torch.LongTensor([kb_position]).view(-1))
     kb_var = Variable(kb_facts_embedded)
     answer_modes_var = [Variable(torch.LongTensor([answer_mode]).view(-1)) for answer_mode in answer_modes]
     answ4ques_locs_var = [Variable(torch.LongTensor(answ4ques_loc).view(1, 1, -1)) for answ4ques_loc in answ4ques_locs]
@@ -129,6 +129,15 @@ class DataLoader(object):
 
     def normalize(self, sent):
         return ''.join(token for token in sent.lower() if token not in string.punctuation)
+
+    def embed_word(self):
+        embedder = ElmoEmbedder()
+        embedded_word = dict()
+        for i in self.wordIndexer.index2word:
+            word = self.wordIndexer.index2word[i]
+            embedded_word[word] = torch.from_numpy(embedder.embed_sentence([word]))[:,0][0].view(1,1,-1)
+        with open(preprocessed_data_path + "word", 'wb') as preprocessed:
+            pickle.dump(embedded_word, preprocessed)
 
     def read_QA_pairs(self, qa_data_path):
         qaPairs = []
