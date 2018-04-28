@@ -6,6 +6,8 @@ def is_digit_word(word):
 
 def vars_from_data(data):
     question, answer, question_embedded, answer_embedded, answer_ids, kb_position, kb_facts, kb_facts_embedded, answer_modes, answ4ques_locs, answ4kb_locs = data
+    if kb_position > 19:
+        kb_position = 19
     ques_var = Variable(question_embedded)
     answ_var = Variable(answer_embedded)
     answ_id_var = Variable(torch.LongTensor(answer_ids).view(-1, 1))
