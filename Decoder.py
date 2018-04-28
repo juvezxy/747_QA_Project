@@ -4,7 +4,7 @@ from __future__ import unicode_literals, print_function, division
 from config import *
 
 class Decoder(nn.Module):
-    def __init__(self, output_size, state_size, embedding_size, mode_size, kb_attention_size, max_fact_num, ques_attention_size, max_ques_len):
+    def __init__(self, output_size, state_size, embedding_size, mode_size, kb_attention_size, max_fact_num, ques_attention_size, max_ques_len, position_size):
         super(Decoder, self).__init__()
         self.output_size = output_size
         self.state_size = 2 * state_size
@@ -14,7 +14,8 @@ class Decoder(nn.Module):
         self.max_fact_num = max_fact_num
         self.ques_attention_size = ques_attention_size
         self.max_ques_len = max_ques_len
-        self.lstm_input_size = 2 * self.embedding_size + self.state_size
+        self.position_size = position_size
+        self.lstm_input_size = 2 * self.embedding_size + self.state_size + self.position_size
         self.lstm = nn.LSTM(self.lstm_input_size, self.state_size)
         self.out = nn.Linear(self.state_size, self.output_size)
 

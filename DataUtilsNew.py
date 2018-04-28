@@ -9,6 +9,7 @@ def vars_from_data(data):
     ques_var = Variable(question_embedded)
     answ_var = Variable(answer_embedded)
     answ_id_var = Variable(torch.LongTensor(answer_ids).view(-1, 1))
+    kb_position_var = Variable(torch.LongTensor(kb_position).view(-1))
     kb_var = Variable(kb_facts_embedded)
     answer_modes_var = [Variable(torch.LongTensor([answer_mode]).view(-1)) for answer_mode in answer_modes]
     answ4ques_locs_var = [Variable(torch.LongTensor(answ4ques_loc).view(1, 1, -1)) for answ4ques_loc in answ4ques_locs]
@@ -18,9 +19,9 @@ def vars_from_data(data):
         answer_modes_var = [answer_mode_var.cuda() for answer_mode_var in answer_modes_var]
         answ4ques_locs_var = [answ4ques_loc_var.cuda() for answ4ques_loc_var in answ4ques_locs_var]
         answ4kb_locs_var = [answ4kb_loc_var.cuda() for answ4kb_loc_var in answ4kb_locs_var]
-        return (ques_var.cuda(), answ_var.cuda(), kb_var.cuda(), answ_id_var.cuda(), answer_modes_var, answ4ques_locs_var, answ4kb_locs_var, kb_facts, question, answer)
+        return (ques_var.cuda(), answ_var.cuda(), kb_var.cuda(), kb_position_var.cuda(), answ_id_var.cuda(), answer_modes_var, answ4ques_locs_var, answ4kb_locs_var, kb_facts, question, answer)
     else:
-        return (ques_var, answ_var, kb_var, answ_id_var, answer_modes_var, answ4ques_locs_var, answ4kb_locs_var, kb_facts, question, answer)
+        return (ques_var, answ_var, kb_var, kb_position_var, answ_id_var, answer_modes_var, answ4ques_locs_var, answ4kb_locs_var, kb_facts, question, answer)
 
 def tokenizer(sentence, ent=None):
     tokenized_list = []
