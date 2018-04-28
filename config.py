@@ -97,3 +97,5 @@ stops = (
 ch_punctuation = non_stops + stops
 
 all_punctuation = ch_punctuation + string.punctuation + ' '
+
+SOS_NUMPY = torch.from_numpy(ElmoEmbedder().embed_sentence(["_SOS"]))[:,0][0].view(1,1,-1)

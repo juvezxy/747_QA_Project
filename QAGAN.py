@@ -52,8 +52,8 @@ class QAGAN(object):
         for epoch in range(self.epoch_size):
             self.optimizer.zero_grad()
             shuffle(training_data)
-            #for iter in range(len(training_data)):
-            for iter in range(1):
+            for iter in range(len(training_data)):
+            #for iter in range(1):
                 ques_var, answ_var, kb_var, answ_id_var, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts, ques, answ = vars_from_data(
                     training_data[iter])
                 answ_length = answ_var.size()[0]
@@ -80,7 +80,7 @@ class QAGAN(object):
 
                 ######################### Decoding ###################################
                 decoder_hidden = (question_embedded, cell_state)
-                decoder_input = Variable(torch.from_numpy(embedder.embed_sentence(["_SOS"]))[:,0][0].view(1,1,-1))
+                decoder_input = Variable(SOS_NUMPY)
                 hist_ques = Variable(torch.zeros(1, 1, self.max_ques_len))
                 hist_kb = Variable(torch.zeros(1, 1, self.max_fact_num))
                 if use_cuda:
@@ -198,7 +198,7 @@ class QAGAN(object):
 
         ######################### Decoding ###################################
         decoder_hidden = (question_embedded, cell_state)
-        decoder_input = Variable(torch.from_numpy(embedder.embed_sentence(["_SOS"]))[:,0][0].view(1,1,-1))
+        decoder_input = Variable(SOS_NUMPY)
         hist_ques = Variable(torch.zeros(1, 1, self.max_ques_len))
         hist_kb = Variable(torch.zeros(1, 1, self.max_fact_num))
         if use_cuda:

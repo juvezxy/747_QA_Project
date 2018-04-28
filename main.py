@@ -15,8 +15,17 @@ if __name__ == '__main__':
         print ("Loading from preprocessed file ...")
         with open(preprocessed_data_path, 'rb') as preprocessed:
             data_loader = pickle.load(preprocessed)
+        with open(preprocessed_data_path + "training1", 'rb') as preprocessed:
+            data_loader.training_data = pickle.load(preprocessed)
+        with open(preprocessed_data_path + "testing1", 'rb') as preprocessed:
+            data_loader.testing_data = pickle.load(preprocessed)
+        for i in range(2, 7):
+            with open(preprocessed_data_path + "training"+str(i), 'rb') as preprocessed:
+                data_loader.training_data += pickle.load(preprocessed)
+            with open(preprocessed_data_path + "testing"+str(i), 'rb') as preprocessed:
+                data_loader.testing_data += pickle.load(preprocessed)
     else:
-        data_loader = DataLoader(toy_msmarco_path, True)
+        data_loader = DataLoader(msmarco_path, True)
         print ("Saving to preprocessed file ...")
         with open(preprocessed_data_path, 'wb') as preprocessed:
             pickle.dump(data_loader, preprocessed)
@@ -25,7 +34,7 @@ if __name__ == '__main__':
     model_params = {}
     model_params["word_indexer"] = data_loader.wordIndexer
     model_params["embedding_size"] = 1024
-    model_params["state_size"] = 510
+    model_params["state_size"] = 512
     model_params["mode_size"] = 200
     model_params["ques_attention_size"] = 200
     model_params["kb_attention_size"] = 200
@@ -33,7 +42,7 @@ if __name__ == '__main__':
     model_params["mode_loss_rate"] = 1.0
     model_params["batch_size"] = 1
     model_params["epoch_size"] = 1
-    model_params["L2_factor"] = 0.0001
+    model_params["L2_factor"] = 0.000001
     model_params["max_fact_num"] = data_loader.max_fact_num
     model_params["max_ques_len"] = data_loader.max_ques_len
     model_params["MAX_LENGTH"] = 20

@@ -5,7 +5,7 @@ def is_digit_word(word):
     return re.match(r'\d+', word)
 
 def vars_from_data(data):
-    question, answer, question_embedded, answer_embedded, answer_ids, kb_facts, kb_facts_embedded, answer_modes, answ4ques_locs, answ4kb_locs = data
+    question, answer, question_embedded, answer_embedded, answer_ids, kb_position, kb_facts, kb_facts_embedded, answer_modes, answ4ques_locs, answ4kb_locs = data
     ques_var = Variable(question_embedded)
     answ_var = Variable(answer_embedded)
     answ_id_var = Variable(torch.LongTensor(answer_ids).view(-1, 1))
@@ -230,8 +230,8 @@ class DataLoader(object):
         print(len(train_pairs), 'training pairs read.')
         print(len(test_pairs), 'test pairs read.')
         print('Maximum question length: ', self.max_ques_len)
-        shuffle(train_pairs)
-        shuffle(test_pairs)
+        #shuffle(train_pairs)
+        #shuffle(test_pairs)
         qaPairs = train_pairs + test_pairs
 
         split = len(train_pairs)
@@ -317,15 +317,47 @@ class DataLoader(object):
             answer_embedded = [torch.from_numpy(embedder.embed_sentence([word]))[:,0][0].view(1,1,-1) for word in answer]
             answer_embedded = torch.cat(answer_embedded, 0)
             kb_fact_embedded = torch.from_numpy(embedder.embed_sentence([kb_facts[0][-1]]))[:,0][0].view(1,1,-1)
+            kb_position = -1
+            try:
+                kb_position = answer.index(kb_facts[0][-1])
+            except:
+
+                for kb_try in kb_facts[0][-1].split(" "):
+                    try:
+                        kb_position = answer.index(kb_try)
+                    except:
+                        continue
+            if kb_position == -1:
+                kb_position = 5
+
+            if i % 1000 == 0:
+                print(i, "pair")
 
             if (True):
                 if is_training_data:
-                    self.training_data.append((question, answer, question_embedded, answer_embedded, answer_ids, kb_facts, kb_fact_embedded,
+                    self.training_data.append((question, answer, question_embedded, answer_embedded, answer_ids, kb_position, kb_facts, kb_fact_embedded,
                                                answer_modes, answ4ques_locs, answ4kb_locs))
                 else:
-                    self.testing_data.append((question, answer, question_embedded, answer_embedded, answer_ids, kb_facts, kb_fact_embedded,
+                    self.testing_data.append((question, answer, question_embedded, answer_embedded, answer_ids, kb_position, kb_facts, kb_fact_embedded,
                                                answer_modes, answ4ques_locs, answ4kb_locs))
                     self.gold_answer.append(triple_list)
+
+            if i % 10000 == 0 and i / 10000 > 0:
+                print("Saving to preprocessed file ...")
+                with open(preprocessed_data_path+"training"+str(i / 10000), 'wb') as preprocessed:
+                    pickle.dump(self.training_data, preprocessed)
+                with open(preprocessed_data_path+"testing"+str(i / 10000), 'wb') as preprocessed:
+                    pickle.dump(self.testing_data, preprocessed)
+                self.training_data = []
+                self.testing_data = []
+
+        print("Saving to preprocessed file ...")
+        with open(preprocessed_data_path + "training6", 'wb') as preprocessed:
+            pickle.dump(self.training_data, preprocessed)
+        with open(preprocessed_data_path + "testing6", 'wb') as preprocessed:
+            pickle.dump(self.testing_data, preprocessed)
+        self.training_data = []
+        self.testing_data = []
 
         print('Processing done.', len(self.training_data), 'training pairs,', len(self.testing_data), 'test pairs.')
         print('Total vocab size: ', self.wordIndexer.wordCount)
