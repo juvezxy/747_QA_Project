@@ -46,7 +46,7 @@ if __name__ == '__main__':
     model_params["mode_loss_rate"] = 1.0
     model_params["position_loss_rate"] = 0.1
     model_params["batch_size"] = 1
-    model_params["epoch_size"] = 20
+    model_params["epoch_size"] = 1
     model_params["L2_factor"] = 0.000001
     model_params["max_fact_num"] = data_loader.max_fact_num
     model_params["max_ques_len"] = data_loader.max_ques_len
@@ -56,6 +56,8 @@ if __name__ == '__main__':
 
     # Train Model
     model.fit(data_loader.training_data+data_loader.testing_data)
+    with open("Saved_Model", 'wb') as preprocessed:
+        pickle.dump(model, preprocessed)
 
     # Evaluate
     evaluate(model, data_loader.testing_data, data_loader.gold_answer, True)

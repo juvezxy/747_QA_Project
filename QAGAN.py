@@ -275,7 +275,7 @@ class QAGAN(object):
                 else:
                     word = FIL
                 decoded_token.append(word)
-                decoder_input = Variable(self.word_embedder[word])
+                decoder_input = Variable(self.word_embedder[self.word_indexer[word_idx]])
                 weighted_question_encoding = encoder_outputs[copy_idx].view(1, 1, -1)
             if use_cuda:
                 weighted_kb_facts_encoding = weighted_kb_facts_encoding.cuda()
