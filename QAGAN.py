@@ -56,10 +56,11 @@ class QAGAN(object):
         lossTotal = 0.0
         XEnLoss = nn.CrossEntropyLoss()
         for epoch in range(self.epoch_size):
+            lossTotal = 0.0
             self.optimizer.zero_grad()
             shuffle(training_data)
             for iter in range(len(training_data)):
-            #for iter in range(100):
+            #for iter in range(1000):
                 ques_var, answ_var, kb_var, kb_position_var, answ_id_var, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts, ques, answ = vars_from_data(
                     training_data[iter])
                 answ_length = answ_var.size()[0]
@@ -274,8 +275,13 @@ class QAGAN(object):
                     word = ques[copy_idx]
                 else:
                     word = FIL
+
                 decoded_token.append(word)
-                decoder_input = Variable(self.word_embedder[self.word_indexer[word_idx]])
+                decoder_input = word_idx.view(1,1,-1).narrow(2, 0, 1024)
+                #if word in self.word_indexer.word2index:
+                 #   decoder_input = Variable(self.word_embedder[self.word_indexer.index2word[self.word_indexer.word2index[word]]])
+                #else:
+                 #   decoder_input = Variable(self.word_embedder[self.word_indexer.index2word[3]])
                 weighted_question_encoding = encoder_outputs[copy_idx].view(1, 1, -1)
             if use_cuda:
                 weighted_kb_facts_encoding = weighted_kb_facts_encoding.cuda()

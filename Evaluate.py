@@ -1,6 +1,6 @@
 # coding:utf-8
 
-from config import *
+import config
 from COREQA import *
 from os import system
 
