@@ -256,21 +256,21 @@ class QAGAN(object):
                     decoded_token.append("_EOS")
                     break
                 else:
-                    decoded_id.append(idx)
                     word = self.word_indexer.index2word[idx]
                     decoded_token.append(word)
                     decoder_input = Variable(self.word_embedder[word])
+                    decoded_id.append(decoder_input)
                     weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, self.embedding_size))
             elif idx < self.word_indexer.wordCount + self.max_fact_num:  # retrieve mode
                 kb_idx = idx - self.word_indexer.wordCount
                 kb_sub, kb_rel, kb_obj = kb_facts[kb_idx]
                 decoded_token.append(kb_obj)
                 decoder_input = kb_var
+                decoded_id.append(decoder_input)
                 weighted_kb_facts_encoding = kb_fact_embedded
             else:  # copy mode
                 copy_idx = idx - self.word_indexer.wordCount - self.max_fact_num
                 word_idx = ques_var[copy_idx]
-                decoded_id.append(word_idx.data[0])
                 if copy_idx < len(ques):
                     word = ques[copy_idx]
                 else:
@@ -278,6 +278,7 @@ class QAGAN(object):
 
                 decoded_token.append(word)
                 decoder_input = word_idx.view(1,1,-1).narrow(2, 0, 1024)
+                decoded_id.append(decoder_input)
                 #if word in self.word_indexer.word2index:
                  #   decoder_input = Variable(self.word_embedder[self.word_indexer.index2word[self.word_indexer.word2index[word]]])
                 #else:
