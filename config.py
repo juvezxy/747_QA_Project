@@ -98,4 +98,5 @@ ch_punctuation = non_stops + stops
 
 all_punctuation = ch_punctuation + string.punctuation + ' '
 
+EOS_NUMPY = torch.from_numpy(ElmoEmbedder().embed_sentence(["_EOS"]))[:,0][0].view(1,1,-1)
 SOS_NUMPY = torch.from_numpy(ElmoEmbedder().embed_sentence(["_SOS"]))[:,0][0].view(1,1,-1)

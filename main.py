@@ -42,11 +42,15 @@ if __name__ == '__main__':
     model_params["position_size"] = 200
     model_params["ques_attention_size"] = 200
     model_params["kb_attention_size"] = 200
+    model_params["dis_embedding_dim"] = 64
+    model_params["dis_hidden_dim"] = 64
     model_params["learning_rate"] = 0.0001
     model_params["mode_loss_rate"] = 1.0
     model_params["position_loss_rate"] = 0.01
     model_params["batch_size"] = 1
+    model_params["adv_batch_size"] = 32
     model_params["epoch_size"] = 5
+    model_params["adv_epoch_size"] = 1
     model_params["L2_factor"] = 0.0000001
     model_params["max_fact_num"] = data_loader.max_fact_num
     model_params["max_ques_len"] = data_loader.max_ques_len
@@ -56,7 +60,11 @@ if __name__ == '__main__':
 
     # Train Model
     for i in range(6):
-        model.fit(data_loader.testing_data+data_loader.training_data)
+        # Seq2Seq Training
+        model.fit(data_loader.training_data, False)
+        # Adversarial Training
+        model.fit(data_loader.training_data, True)
+
         # Evaluate
         evaluate(model, data_loader.testing_data, data_loader.gold_answer, True)
 
