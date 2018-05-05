@@ -7,10 +7,7 @@ from config import *
 
 
 if __name__ == '__main__':
-
     # Process Data
-    #data_loader = DataLoader(cqa_data_path, True)
-    #data_loader = DataLoader(syn_data_path, False)
     if load_from_preprocessed:
         print ("Loading from preprocessed file ...")
         with open(preprocessed_data_path, 'rb') as preprocessed:
@@ -19,7 +16,7 @@ if __name__ == '__main__':
             data_loader.training_data = pickle.load(preprocessed)
         with open(preprocessed_data_path + "testing1", 'rb') as preprocessed:
             data_loader.testing_data = pickle.load(preprocessed)
-        for i in range(2, 7):
+        for i in range(5, 7):
             with open(preprocessed_data_path + "training"+str(i), 'rb') as preprocessed:
                 data_loader.training_data += pickle.load(preprocessed)
             with open(preprocessed_data_path + "testing"+str(i), 'rb') as preprocessed:
@@ -40,20 +37,20 @@ if __name__ == '__main__':
     model_params["word_indexer"] = data_loader.wordIndexer
     model_params["word_embedder"] = word_embedder
     model_params["embedding_size"] = 1024
-    model_params["state_size"] = 512
+    model_params["state_size"] = 1024
     model_params["mode_size"] = 200
     model_params["position_size"] = 200
     model_params["ques_attention_size"] = 200
     model_params["kb_attention_size"] = 200
     model_params["dis_embedding_dim"] = 64
     model_params["dis_hidden_dim"] = 64
-    model_params["learning_rate"] = 0.0001
+    model_params["learning_rate"] = 0.00001
     model_params["mode_loss_rate"] = 1.0
     model_params["position_loss_rate"] = 0.01
     model_params["batch_size"] = 1
     model_params["adv_batch_size"] = 32
-    model_params["epoch_size"] = 5
-    model_params["adv_epoch_size"] = 1
+    model_params["epoch_size"] = 10
+    model_params["adv_epoch_size"] = 10
     model_params["L2_factor"] = 0.0000001
     model_params["max_fact_num"] = data_loader.max_fact_num
     model_params["max_ques_len"] = data_loader.max_ques_len
@@ -62,7 +59,7 @@ if __name__ == '__main__':
     model = QAGAN(model_params)
 
     # Train Model
-    for i in range(6):
+    for i in range(20):
         # Seq2Seq Training
         model.fit(data_loader.training_data, False)
         # Adversarial Training
@@ -71,6 +68,3 @@ if __name__ == '__main__':
         # Evaluate
         evaluate(model, data_loader.testing_data, data_loader.gold_answer, True)
 
-    for i in range(10):
-        model.fit(data_loader.testing_data)
-        evaluate(model, data_loader.testing_data, data_loader.gold_answer, True)

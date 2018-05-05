@@ -3,9 +3,9 @@
 from Encoder import *
 from Decoder import *
 from Positioner import *
+from Discriminator import *
 from DataUtilsNew import *
 from config import *
-from discriminator import *
 import helpers
 import sys
 
@@ -52,6 +52,7 @@ class QAGAN(object):
             self.decoder.cuda()
             self.positioner.cuda()
             self.dis.cuda()
+            self.negative_samples = self.negative_samples.cuda()
 
         self.optimizer = optim.Adam(list(self.encoder.parameters()) + list(self.decoder.parameters()) + list(self.positioner.parameters()),
                                     lr=self.learning_rate, weight_decay=self.L2_factor)
@@ -78,7 +79,6 @@ class QAGAN(object):
                     oracle_samples.append(answ_var.permute(1,0,2))
             self.oracle_samples = torch.cat(oracle_samples, 0).data
         startTime = time.time()
-        lossTotal = 0.0
         XEnLoss = nn.CrossEntropyLoss()
         for epoch in range(epochs):
             lossTotal = 0.0
@@ -88,19 +88,11 @@ class QAGAN(object):
             training_len = len(training_data)
             negative_samples = []
             for iter in range(training_len):
-            #for iter in range(1000):
                 ques_var, answ_var, kb_var, kb_position_var, answ_id_var, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts, ques, answ = vars_from_data(
                     training_data[iter])
                 answ_length = answ_var.size()[0]
 
                 #################### Process KB facts ###############################
-                '''
-                kb_facts_embedded = []
-                for rel_obj in kb_var_list:
-                    rel_embedded = self.embedding(rel_obj[0]).view(1, 1, -1)
-                    obj_embedded = self.embedding(rel_obj[1]).view(1, 1, -1)
-                    kb_facts_embedded.append(torch.cat((rel_embedded, obj_embedded), 2))
-                '''
                 kb_fact_embedded = kb_var
                 #####################################################################
 
@@ -129,7 +121,6 @@ class QAGAN(object):
                     hist_kb = hist_kb.cuda()
                     hist_ques = hist_ques.cuda()
 
-                #loss = 0.0
                 decoded_seq = []
                 cond_probs = []
                 seq_len = self.MAX_LENGTH if policy_gradient else answ_length
@@ -183,16 +174,16 @@ class QAGAN(object):
                         cond_probs.append(topv3[0][0][0])
                         if idx < self.word_indexer.wordCount:  # predict mode
                             if idx == EOS:
-                                decoded_seq.append(Variable(EOS_NUMPY))
+                                decoded_seq.append(Variable(EOS_NUMPY).cuda())
                                 break
                             else:
                                 word = self.word_indexer.index2word[idx]
                                 decoder_input = Variable(self.word_embedder[word])
-                                decoded_seq.append(decoder_input)
+                                decoded_seq.append(decoder_input.cuda())
                                 weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, self.embedding_size))
                         elif idx < self.word_indexer.wordCount + self.max_fact_num:  # retrieve mode
                             decoder_input = kb_var
-                            decoded_seq.append(decoder_input)
+                            decoded_seq.append(decoder_input.cuda())
                             weighted_kb_facts_encoding = kb_fact_embedded
                         else:  # copy mode
                             copy_idx = idx - self.word_indexer.wordCount - self.max_fact_num
@@ -201,13 +192,8 @@ class QAGAN(object):
                                 word = ques[copy_idx]
                             else:
                                 word = FIL
-
                             decoder_input = word_idx.view(1,1,-1).narrow(2, 0, 1024)
-                            decoded_seq.append(decoder_input)
-                            #if word in self.word_indexer.word2index:
-                             #   decoder_input = Variable(self.word_embedder[self.word_indexer.index2word[self.word_indexer.word2index[word]]])
-                            #else:
-                             #   decoder_input = Variable(self.word_embedder[self.word_indexer.index2word[3]])
+                            decoded_seq.append(decoder_input.cuda())
                             weighted_question_encoding = encoder_outputs[copy_idx].view(1, 1, -1)
                         if use_cuda:
                             weighted_kb_facts_encoding = weighted_kb_facts_encoding.cuda()
@@ -253,12 +239,17 @@ class QAGAN(object):
                     padding = self.MAX_LENGTH - decoded_seq.size()[0]
                     if (padding >= 0):
                         decoded_seq = F.pad(decoded_seq, (0, 0, 0, 0, 0, padding), "constant", 0)
+                    if use_cuda:
+                        decoded_seq = decoded_seq.cuda()
                     negative_samples.append(decoded_seq.permute(1,0,2))
                     rewards = self.dis.batchClassify(decoded_seq)
-                    for i in range(len(decoded_seq)):
-                        loss += math.log(cond_probs[i]) * rewards#TODO: calculate loss given discriminator rewards
+
+
+                    for i in range(len(cond_probs)):
+                        loss += math.log(cond_probs[i]) * rewards
                     if (iter + 1) % self.adv_batch_size == 0:
-                        loss.backward()
+
+                        loss.sum().backward()
                         self.optimizer.step()
                         self.optimizer.zero_grad()
                         loss = loss.data[0]
@@ -273,8 +264,8 @@ class QAGAN(object):
                         lossTotal += loss
                         loss = 0.0
 
-                    if (iter + 1) % 1000 == 0:
-                        lossAvg = lossTotal / 1000
+                    if (iter + 1) % 10 == 0:
+                        lossAvg = lossTotal / 10
                         lossTotal = 0
                         secs = time.time() - startTime
                         mins = math.floor(secs / 60)
@@ -285,21 +276,15 @@ class QAGAN(object):
             if policy_gradient:
                 self.negative_samples = torch.cat(negative_samples, 0).data
                 print('Training discriminator ...')
-                self.train_discriminator(5, 3)   
+                self.train_discriminator(10, 3)
         if (not policy_gradient):
             self.has_trained = True
             print('Training completed!')
             print('Pretraining discriminator ...')
-            self.train_discriminator(50, 3)   
+            self.train_discriminator(50, 3)
 
     def train_discriminator(self, d_steps, epochs):
-        """
-        Training the discriminator on real_data_samples (positive) and generated samples from generator (negative).
-        Samples are drawn d_steps times, and the discriminator is trained for epochs epochs.
-        """
-
         for d_step in range(d_steps):
-            #s = helpers.batchwise_sample(gen, POS_NEG_SAMPLES, BATCH_SIZE)
             dis_inp, dis_target = helpers.prepare_discriminator_data(self.oracle_samples, self.negative_samples, gpu=use_cuda)
             for epoch in range(epochs):
                 print('d-step %d epoch %d : ' % (d_step + 1, epoch + 1), end='')
@@ -329,16 +314,8 @@ class QAGAN(object):
                 total_acc /= float(samples)
 
     def predict(self, ques_var, kb_var, kb_facts, ques):
-        # inputLength = inputVar.size()[0]
 
         #################### Process KB facts ###############################
-        '''
-        kb_facts_embedded = []
-        for rel_obj in kb_var_list:
-            rel_embedded = self.embedding(rel_obj[0]).view(1, 1, -1)
-            obj_embedded = self.embedding(rel_obj[1]).view(1, 1, -1)
-            kb_facts_embedded.append(torch.cat((rel_embedded, obj_embedded), 2))
-        '''
         kb_fact_embedded = kb_var
 
         #####################################################################
@@ -422,10 +399,6 @@ class QAGAN(object):
                 decoded_token.append(word)
                 decoder_input = word_idx.view(1,1,-1).narrow(2, 0, 1024)
                 decoded_id.append(decoder_input)
-                #if word in self.word_indexer.word2index:
-                 #   decoder_input = Variable(self.word_embedder[self.word_indexer.index2word[self.word_indexer.word2index[word]]])
-                #else:
-                 #   decoder_input = Variable(self.word_embedder[self.word_indexer.index2word[3]])
                 weighted_question_encoding = encoder_outputs[copy_idx].view(1, 1, -1)
             if use_cuda:
                 weighted_kb_facts_encoding = weighted_kb_facts_encoding.cuda()
