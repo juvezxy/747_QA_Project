@@ -16,7 +16,7 @@ if __name__ == '__main__':
             data_loader.training_data = pickle.load(preprocessed)
         with open(preprocessed_data_path + "testing1", 'rb') as preprocessed:
             data_loader.testing_data = pickle.load(preprocessed)
-        for i in range(5, 7):
+        for i in range(2, 7):
             with open(preprocessed_data_path + "training"+str(i), 'rb') as preprocessed:
                 data_loader.training_data += pickle.load(preprocessed)
             with open(preprocessed_data_path + "testing"+str(i), 'rb') as preprocessed:
