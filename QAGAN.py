@@ -6,6 +6,8 @@ from Positioner import *
 from DataUtilsNew import *
 from config import *
 from discriminator import *
+import helpers
+import sys
 
 class QAGAN(object):
     def __init__(self, model_params):
@@ -34,6 +36,7 @@ class QAGAN(object):
         self.MAX_LENGTH = model_params["MAX_LENGTH"]
         self.has_trained = False
         self.oracle_samples = []
+        self.negative_samples = torch.zeros(1, self.MAX_LENGTH, self.embedding_size)
 
         ################ Initialize graph components ########################
         self.encoder = Encoder(self.word_indexer.wordCount, self.state_size, self.embedding_size)
@@ -42,7 +45,7 @@ class QAGAN(object):
                                kb_attention_size=self.kb_attention_size, max_fact_num=self.max_fact_num,
                                ques_attention_size=self.ques_attention_size, max_ques_len=self.max_ques_len, position_size=self.MAX_LENGTH)
         self.positioner = Positioner(self.state_size, self.position_size, self.MAX_LENGTH)
-        self.dis = Discriminator(self.dis_embedding_dim, self.dis_hidden_dim, self.word_indexer.wordCount, self.MAX_LENGTH, gpu=use_cuda)
+        self.dis = Discriminator(self.embedding_size, self.dis_hidden_dim, self.word_indexer.wordCount, self.MAX_LENGTH, gpu=use_cuda)
 
         if use_cuda:
             self.encoder.cuda()
@@ -52,7 +55,7 @@ class QAGAN(object):
 
         self.optimizer = optim.Adam(list(self.encoder.parameters()) + list(self.decoder.parameters()) + list(self.positioner.parameters()),
                                     lr=self.learning_rate, weight_decay=self.L2_factor)
-        self.dis_optimizer = optim.Adagrad(dis.parameters())
+        self.dis_optimizer = optim.Adagrad(self.dis.parameters())
         #####################################################################
 
     def fit(self, training_data, policy_gradient):
@@ -69,8 +72,11 @@ class QAGAN(object):
             for iter in range(len(training_data)):
                 ques_var, answ_var, kb_var, kb_position_var, answ_id_var, answer_modes_var_list, answ4ques_locs_var_list, answ4kb_locs_var_list, kb_facts, ques, answ = vars_from_data(
                     training_data[iter])
-                oracle_samples.append(answ_var.view(1, -1))
-            self.oracle_samples = torch.cat(oracle_samples, 0)
+                padding = self.MAX_LENGTH - answ_var.size()[0]
+                if (padding >= 0):
+                    answ_var = F.pad(answ_var, (0, 0, 0, 0, 0, padding), "constant", 0)
+                    oracle_samples.append(answ_var.permute(1,0,2))
+            self.oracle_samples = torch.cat(oracle_samples, 0).data
         startTime = time.time()
         lossTotal = 0.0
         XEnLoss = nn.CrossEntropyLoss()
@@ -128,7 +134,8 @@ class QAGAN(object):
                 cond_probs = []
                 seq_len = self.MAX_LENGTH if policy_gradient else answ_length
                 for i in range(seq_len):
-                    answer_mode = answer_modes_var_list[i]
+                    if (not policy_gradient):
+                        answer_mode = answer_modes_var_list[i]
                     word_embedded = decoder_input
                     weighted_question_encoding = Variable(torch.zeros(1, 1, 2 * self.state_size))
                     weighted_kb_facts_encoding = Variable(torch.zeros(1, 1, self.embedding_size))
@@ -136,7 +143,7 @@ class QAGAN(object):
                         weighted_question_encoding = weighted_question_encoding.cuda()
                         weighted_kb_facts_encoding = weighted_kb_facts_encoding.cuda()
 
-                    if (i > 0):
+                    if (not policy_gradient) and (i > 0):
                         ques_locs = answ4ques_locs_var_list[i - 1][0][0]
                         kb_locs = answ4kb_locs_var_list[i - 1][0][0]
                         question_match_count = 0
@@ -242,7 +249,11 @@ class QAGAN(object):
                 
                 #####################################################################
                 if policy_gradient:
-                    negative_samples.append(decoded_seq.view(1, -1))
+                    decoded_seq = torch.cat(decoded_seq, 0)
+                    padding = self.MAX_LENGTH - decoded_seq.size()[0]
+                    if (padding >= 0):
+                        decoded_seq = F.pad(decoded_seq, (0, 0, 0, 0, 0, padding), "constant", 0)
+                    negative_samples.append(decoded_seq.permute(1,0,2))
                     rewards = self.dis.batchClassify(decoded_seq)
                     for i in range(len(decoded_seq)):
                         loss += math.log(cond_probs[i]) * rewards#TODO: calculate loss given discriminator rewards
@@ -272,7 +283,7 @@ class QAGAN(object):
 
             ###################### Train discriminator ################################
             if policy_gradient:
-                self.negative_samples = torch.cat(negative_samples, 0)
+                self.negative_samples = torch.cat(negative_samples, 0).data
                 print('Training discriminator ...')
                 self.train_discriminator(5, 3)   
         if (not policy_gradient):
@@ -296,7 +307,8 @@ class QAGAN(object):
                 total_loss = 0
                 total_acc = 0
 
-                for i in range(0, self.oracle_samples.size()[0]+self.negative_samples.size()[0], self.adv_batch_size):
+                samples = self.oracle_samples.size()[0] + self.negative_samples.size()[0]
+                for i in range(0, samples, self.adv_batch_size):
                     inp, target = dis_inp[i:i + self.adv_batch_size], dis_target[i:i + self.adv_batch_size]
                     self.dis_optimizer.zero_grad()
                     out = self.dis.batchClassify(inp)
@@ -308,13 +320,13 @@ class QAGAN(object):
                     total_loss += loss.data[0]
                     total_acc += torch.sum((out>0.5)==(target>0.5)).data[0]
 
-                    if (i / self.adv_batch_size) % ceil(ceil(2 * POS_NEG_SAMPLES / float(
+                    if (i / self.adv_batch_size) % math.ceil(math.ceil(samples / float(
                             self.adv_batch_size)) / 10.) == 0:  # roughly every 10% of an epoch
                         print('.', end='')
                         sys.stdout.flush()
 
-                total_loss /= ceil(2 * POS_NEG_SAMPLES / float(self.adv_batch_size))
-                total_acc /= float(2 * POS_NEG_SAMPLES)
+                total_loss /= math.ceil(samples / float(self.adv_batch_size))
+                total_acc /= float(samples)
 
     def predict(self, ques_var, kb_var, kb_facts, ques):
         # inputLength = inputVar.size()[0]

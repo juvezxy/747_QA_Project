@@ -44,7 +44,7 @@ def prepare_discriminator_data(pos_samples, neg_samples, gpu=False):
         - target: pos_size + neg_size (boolean 1/0)
     """
 
-    inp = torch.cat((pos_samples, neg_samples), 0).type(torch.LongTensor)
+    inp = torch.cat((pos_samples, neg_samples), 0)
     target = torch.ones(pos_samples.size()[0] + neg_samples.size()[0])
     target[pos_samples.size()[0]:] = 0
 

@@ -28,6 +28,9 @@ if __name__ == '__main__':
             word_embedder = pickle.load(preprocessed)
     else:
         data_loader = DataLoader(msmarco_path, True)
+        data_loader.embed_word()
+        with open(preprocessed_data_path + "word", 'rb') as preprocessed:
+            word_embedder = pickle.load(preprocessed)
         print ("Saving to preprocessed file ...")
         with open(preprocessed_data_path, 'wb') as preprocessed:
             pickle.dump(data_loader, preprocessed)
