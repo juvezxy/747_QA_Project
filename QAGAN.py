@@ -245,7 +245,7 @@ class QAGAN(object):
                     rewards = self.dis.batchClassify(decoded_seq)
 
                     for i in range(len(cond_probs)):
-                        loss += math.log(cond_probs[i]) * rewards
+                        loss += (-math.log(cond_probs[i]) * rewards)
                     if (iter + 1) % self.adv_batch_size == 0:
 
                         loss.sum().backward()
